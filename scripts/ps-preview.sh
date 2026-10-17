@@ -1,5 +1,5 @@
 #!/bin/bash
-# Per-branch ProvinceSystem website previews at https://<slug>.tfminecraft.net.
+# Per-branch TFMCWeb website previews at https://<slug>.tfminecraft.net.
 # Installed as root's /usr/local/sbin/ps-preview and run as tfmc (docker group), by the
 # preview key on psdeploy (through ps-preview-ssh), by admins with sudo -u tfmc, and by
 # ps-preview-reap.timer. Preview backends run as tfmc too, so tfmc owns every file.
@@ -69,9 +69,9 @@ remove_dir() {
 staging_backend() {
   local id
   id=$(docker ps -a -q \
-    --filter label=com.docker.compose.project=tfmc-staging \
+    --filter label=com.docker.compose.project=tfmcweb-staging \
     --filter label=com.docker.compose.service=backend | head -n1)
-  [[ -n "$id" ]] || die "cannot find the tfmc-staging backend container"
+  [[ -n "$id" ]] || die "cannot find the tfmcweb-staging backend container"
   echo "$id"
 }
 
@@ -108,7 +108,7 @@ native_ready() {
 }
 
 preview_db_container() {
-  docker ps -q --filter label=com.docker.compose.project=tfmc-staging \
+  docker ps -q --filter label=com.docker.compose.project=tfmcweb-staging \
     --filter label=com.docker.compose.service=db | head -n1
 }
 
@@ -276,7 +276,7 @@ cmd_up() {
   low_prio docker pull -q "$IMAGE_PREFIX-backend:$slug" >/dev/null
   low_prio docker pull -q "$IMAGE_PREFIX-frontend:$slug" >/dev/null
   docker image prune -f \
-    --filter "label=org.opencontainers.image.source=https://github.com/TF-Minecraft/ProvinceSystem" >/dev/null
+    --filter "label=org.opencontainers.image.source=https://github.com/TF-Minecraft/TFMCWeb" >/dev/null
 
   [[ $(docker image inspect -f '{{index .Config.Labels "net.tfminecraft.storage"}}' "$IMAGE_PREFIX-backend:$slug") == postgres ]] || die "branch image must include the native Postgres migration"
   local service container
@@ -359,7 +359,7 @@ cmd_reap() {
   done < <(docker ps -a --filter label=com.docker.compose.project \
              --format '{{.Label "com.docker.compose.project"}}' | grep '^pv-' | sort -u)
   docker image prune -f \
-    --filter "label=org.opencontainers.image.source=https://github.com/TF-Minecraft/ProvinceSystem" >/dev/null
+    --filter "label=org.opencontainers.image.source=https://github.com/TF-Minecraft/TFMCWeb" >/dev/null
 }
 
 cmd_list() {

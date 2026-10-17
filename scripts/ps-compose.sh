@@ -1,5 +1,5 @@
 #!/bin/bash
-# Limited docker compose for the ProvinceSystem main and dev sites. Installed as root's
+# Limited docker compose for the TFMCWeb main and dev sites. Installed as root's
 # /usr/local/sbin/ps-compose and run as tfmc (docker group) through sudo, so people
 # without docker access can manage the two sites but not mount the host.
 set -euo pipefail
@@ -18,10 +18,12 @@ shift
 case "$target" in
   main)
     dir=/home/tfmc/ProvinceSystem
+    project=tfmcweb-production
     files=(-f "$dir/docker-compose.yml" -f "$dir/docker-compose.override.yml")
     ;;
   dev)
     dir=/home/tfmc/tfmc-staging
+    project=tfmcweb-staging
     files=(-f "$dir/docker-compose.staging.yml" -f "$dir/docker-compose.override.yml")
     ;;
   *)
@@ -55,4 +57,4 @@ image_overlay="/home/tfmc/.site-images-$image_site.json"
 [[ ! -f $image_overlay ]] || files+=(-f "$image_overlay")
 
 cd "$dir"
-exec docker compose --project-directory "$dir" "${files[@]}" "$cmd" "$@"
+exec docker compose --project-name "$project" --project-directory "$dir" "${files[@]}" "$cmd" "$@"

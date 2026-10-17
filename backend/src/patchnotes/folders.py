@@ -98,7 +98,7 @@ REPO_FOLDERS: dict[str, str] = {
     "Research": "Research",
     "SimpleFactions": "SimpleFactions",
     "TFMCCore": "TFMCCore",
-    "TFMCWeb": "TFMCWeb",
+    "TFMCWeb": "TFMCWebBridge",
     "TLibs": "TLibs",
     "Thievery": "Thievery",
     "TrialRooms": "TrialRooms",

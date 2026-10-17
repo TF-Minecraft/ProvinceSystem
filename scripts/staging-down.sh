@@ -2,4 +2,4 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 docker compose -f docker-compose.staging.yml down
-echo "Staging stack stopped (tfmc-staging)."
+echo "Staging stack stopped (tfmcweb-staging)."

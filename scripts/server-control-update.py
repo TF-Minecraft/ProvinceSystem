@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -I
-"""Install the control helper's Python modules from a commit on ProvinceSystem main.
+"""Install the control helper's Python modules from a commit on TFMCWeb main.
 
 The host administrator installs this file once as root, and sudoers lets the
 deployment account run it. It only replaces the modules that run as the
@@ -24,7 +24,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-REPO = "TF-Minecraft/ProvinceSystem"
+REPO = "TF-Minecraft/TFMCWeb"
 SERVICE = "tfmc-server-control.service"
 CODE = Path("/usr/local/lib/tfmc-server-control")
 SERVERS = CODE / "backend/src/servers"

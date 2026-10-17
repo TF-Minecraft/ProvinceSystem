@@ -580,7 +580,7 @@ def _plugin_state(jars: list[Jar], latest: Release, by_hash: dict[str, Release],
 
 def plugin_identifier(name: str | None) -> str:
     lowered = (name or "").lower()
-    return {"activity": "activitytf", "geiger_counter": "geigercounters"}.get(lowered, lowered)
+    return {"activity": "activitytf", "geiger_counter": "geigercounters", "tfmcweb": "tfmcwebbridge"}.get(lowered, lowered)
 
 
 def _match(jar: Jar, by_hash: dict[str, Release], prefixes: list[tuple[str, str]]) -> str | None:
@@ -590,7 +590,7 @@ def _match(jar: Jar, by_hash: dict[str, Release], prefixes: list[tuple[str, str]
     matched = next((repo for prefix, repo in prefixes if lowered.startswith(prefix + "-")), None)
     if matched:
         return matched
-    # Stable Bukkit identifiers differ from repository names for these two plugins.
+    # Stable Bukkit identifiers differ from repository names for these plugins.
     name = plugin_identifier(jar.name)
     return next((repo for _, repo in prefixes if repo.lower() == name), None)
 

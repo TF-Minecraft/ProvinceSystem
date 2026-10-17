@@ -1,3 +1,5 @@
+name: tfmcweb-production
+
 services:
   backend:
     # Reaps the renderer's Chromium processes.

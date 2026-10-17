@@ -208,7 +208,7 @@ def resolve_skin_model(png_bytes: bytes, override: str | None) -> str:
 
 
 def _backend_root() -> Path:
-    # .../ProvinceSystem/backend/src/characters/wardrobe.py → backend/
+    # .../TFMCWeb/backend/src/characters/wardrobe.py → backend/
     return Path(__file__).resolve().parents[2]
 
 
