@@ -1,7 +1,6 @@
 """Append-only staff audit log. Never store cookies, tokens or request bodies."""
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime, timezone
 
 from src import database
@@ -27,13 +26,6 @@ def record(
 
     actor is a signed-in user row (with role), or None for operator commands.
     """
-    if isinstance(conn, sqlite3.Connection):
-        # PG-MIGRATION: until the LuckPerms area converts, luckperms/changes.py passes its
-        # SQLite connection. The audit log is in Postgres now, so this row commits on its
-        # own, just before the caller's.
-        with database.connect() as pg:
-            record(pg, actor=actor, action=action, outcome=outcome, target=target, reason=reason, detail=detail)
-        return
     conn.execute(
         """
         INSERT INTO admin_audit (

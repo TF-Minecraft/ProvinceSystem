@@ -8,10 +8,14 @@ from urllib.parse import parse_qs
 import httpx
 import pytest
 
+from src import database as pg
+from src.auth import testing
 from src.patreon.client import PatreonClient, PatreonError
 from src.patreon import service as s
 from src.patreon.config import Config
-from src.patreon.resolver import iso, utcnow
+from src.patreon.resolver import utcnow
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 CONFIG = Config(enabled=True, apply=True, api_base="https://stub.invalid", campaign_id="13707169")
 FIXTURE = Path(__file__).with_name("test_data")
@@ -55,12 +59,11 @@ def test_all_pages_by_cursor_and_link(tokens, use_link):
 
 @pytest.mark.parametrize("failure", ["http", "json", "document", "truncated", "loop", "external"])
 def test_partial_sync_rolls_back_everything(tokens, database, failure):
-    with database.connect() as conn:
+    with pg.connect() as conn:
         s._store_member(conn, {"member_id": "prior", "patreon_user_id": "old", "tiers": [{"id": "25226353"}], "patron_status": "active_patron"}, utcnow(), CONFIG)
-        conn.execute("INSERT INTO patreon_applied VALUES ('discord','111','[\"ascended\"]',1,0)")
+        conn.execute("INSERT INTO patreon_applied VALUES ('discord', '111', '[\"ascended\"]', true, 0)")
     def snapshot():
-        with database.connect() as conn:
-            return [list(map(tuple, conn.execute("SELECT * FROM " + t))) for t in ("patreon_members", "patreon_applied", "patreon_desired", "patreon_changes", "patreon_links")]
+        return [testing.rows(f"SELECT * FROM {t} ORDER BY 1, 2") for t in ("patreon_members", "patreon_applied", "patreon_desired", "patreon_changes", "patreon_links")]
     before = snapshot()
     def handler(request):
         if not request.url.params.get("page[cursor]"):
@@ -103,8 +106,7 @@ def test_401_refresh_once_and_database_tokens_are_authoritative(tokens, database
     monkeypatch.setenv("PATREON_CREATOR_REFRESH_TOKEN", "wrong-env-refresh")
     assert len(client(handler).members()) == 154
     assert len(calls) == 4 and calls[-1].headers["Authorization"] == "Bearer rotated-access"
-    with database.connect() as conn:
-        assert conn.execute("SELECT refresh_token FROM patreon_tokens").fetchone()[0] == "rotated-refresh"
+    assert testing.value("SELECT refresh_token FROM patreon_tokens") == "rotated-refresh"
 
 
 def test_second_401_not_retried(tokens):
@@ -125,8 +127,7 @@ def test_refresh_failure_keeps_rotating_token_and_alerts(tokens, database, caplo
     c = client(handler)
     with pytest.raises(PatreonError):
         c.members()
-    with database.connect() as conn:
-        assert conn.execute("SELECT refresh_token FROM patreon_tokens").fetchone()[0] == "seed-refresh"
+    assert testing.value("SELECT refresh_token FROM patreon_tokens") == "seed-refresh"
     assert s.alerts()["alerts"][0]["kind"] == "token_refresh_failed"
     assert "secret-token" not in caplog.text and "sensitive@example.com" not in caplog.text
 
@@ -143,8 +144,7 @@ def test_expiry_refresh_and_campaign_discovery(tokens, database):
         return httpx.Response(200, json=DOCUMENT)
     c = client(handler, replace(CONFIG, campaign_id=None))
     c._tokens()
-    with database.connect() as conn:
-        conn.execute("UPDATE patreon_tokens SET expires_at=?", (iso(utcnow() - timedelta(seconds=1)),))
+    testing.execute("UPDATE patreon_tokens SET expires_at = %s", (utcnow() - timedelta(seconds=1),))
     assert len(c.members()) == 154 and calls[0] == "/api/oauth2/token"
 
 
@@ -163,8 +163,7 @@ def test_authorization_code_identity_and_member_read(tokens, database):
     value = c.exchange_authorization_code("consent-code", "https://site.invalid/callback")
     assert c.identity(value["access_token"])["id"] == "123"
     assert c.member(DOCUMENT["data"][0]["id"])["patreon_user_id"] == "90000001"
-    with database.connect() as conn:
-        assert conn.execute("SELECT access_token FROM patreon_tokens").fetchone()[0] == "seed-access"
+    assert testing.value("SELECT access_token FROM patreon_tokens") == "seed-access"
 
 
 def test_malformed_token_response_does_not_overwrite(tokens, database):
@@ -172,22 +171,19 @@ def test_malformed_token_response_does_not_overwrite(tokens, database):
     c._tokens()
     with pytest.raises(PatreonError):
         c.refresh_tokens()
-    with database.connect() as conn:
-        assert conn.execute("SELECT access_token FROM patreon_tokens").fetchone()[0] == "seed-access"
+    assert testing.value("SELECT access_token FROM patreon_tokens") == "seed-access"
 
 
 def test_lost_token_refresh_lease_does_not_overwrite_authoritative_tokens(tokens, database):
     def handler(request):
-        with database.connect() as conn:
-            conn.execute("UPDATE patreon_leases SET owner='other-process' WHERE name='token_refresh'")
-            conn.execute("UPDATE patreon_tokens SET access_token='authoritative',refresh_token='authoritative-refresh'")
+        testing.execute("UPDATE patreon_leases SET owner = 'other-process' WHERE name = 'token_refresh'")
+        testing.execute("UPDATE patreon_tokens SET access_token = 'authoritative', refresh_token = 'authoritative-refresh'")
         return httpx.Response(200, json={"access_token": "stale-access", "refresh_token": "stale-refresh", "expires_in": 1000})
     c = client(handler)
     c._tokens()
     with pytest.raises(PatreonError, match="lease_lost"):
         c.refresh_tokens()
-    with database.connect() as conn:
-        assert conn.execute("SELECT refresh_token FROM patreon_tokens").fetchone()[0] == "authoritative-refresh"
+    assert testing.value("SELECT refresh_token FROM patreon_tokens") == "authoritative-refresh"
 
 
 @pytest.mark.parametrize("field,value", [("user_id", None), ("user_id", ""), ("member_id", None), ("patron_status", "unexpected_status"), ("tier_id", None)])

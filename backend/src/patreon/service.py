@@ -2,21 +2,31 @@
 
 Public handoff: create_or_update_link, refresh_member, recompute_link and
 PatreonClient (client.py). All accept injected configuration/client for tests.
+
+Every transaction that runs `_compute` or `_plan`, or otherwise reads and
+rewrites links, desired state or the outboxes, opens with the `patreon`
+advisory lock (PATREON_LOCK). A function that takes a caller's `conn` expects
+the caller to hold it. Nothing calls Patreon while a transaction is open.
+
+Times are timestamptz. Rows are read through `_text_times`, so the rules keep
+comparing and sending the `isoformat()` strings they always stored.
 """
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid as uuidlib
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from src.skins import db
+from src import database
+from src.skins import db as sqlite_db
 from .config import Config
 from .resolver import entitled_tier, iso, parse, resolve, utcnow
 
 logger = logging.getLogger("patreon")
 LEASE_SECONDS = 180
+# Serialises everything that reads and rewrites the Patreon tables as a whole.
+PATREON_LOCK = "patreon"
 
 
 class ServiceError(ValueError):
@@ -24,61 +34,102 @@ class ServiceError(ValueError):
 
 
 def acquire_lease(name: str = "sync") -> str | None:
+    """Take the lease if it is free or expired; the new owner, or None while another holds it."""
     owner = uuidlib.uuid4().hex
-    now = utcnow()
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute("INSERT INTO patreon_leases VALUES (?, ?, ?) ON CONFLICT(name) DO UPDATE SET owner=excluded.owner, expires_at=excluded.expires_at WHERE patreon_leases.expires_at <= ?",
-                     (name, owner, iso(now + timedelta(seconds=LEASE_SECONDS)), iso(now)))
-        row = conn.execute("SELECT owner FROM patreon_leases WHERE name=?", (name,)).fetchone()
-        return owner if row["owner"] == owner else None
+    with database.connect() as conn:
+        # Seed or lock the named row before reading the clock. The no-op conflict
+        # update also covers a concurrent release deleting it; no expired seed
+        # escapes this transaction. A waiting first acquisition gets its full TTL.
+        conn.execute(
+            "INSERT INTO patreon_leases (name, owner, expires_at) VALUES (%s, '', '1970-01-01T00:00:00Z') "
+            "ON CONFLICT (name) DO UPDATE SET name = excluded.name", (name,))
+        now = utcnow()
+        # One upsert takes a free or expired lease, or leaves another holder's alone (no row back).
+        row = conn.execute(
+            "INSERT INTO patreon_leases (name, owner, expires_at) VALUES (%s, %s, %s) "
+            "ON CONFLICT (name) DO UPDATE SET owner = excluded.owner, expires_at = excluded.expires_at "
+            "WHERE patreon_leases.expires_at <= %s RETURNING owner",
+            (name, owner, now + timedelta(seconds=LEASE_SECONDS), now)).fetchone()
+    return owner if row is not None and row["owner"] == owner else None
 
 
 def renew_lease(name: str, owner: str):
-    with db.connect() as conn:
-        cur = conn.execute("UPDATE patreon_leases SET expires_at=? WHERE name=? AND owner=? AND expires_at>?",
-                           (iso(utcnow() + timedelta(seconds=LEASE_SECONDS)), name, owner, iso(utcnow())))
+    with database.connect() as conn:
+        conn.execute("LOCK TABLE patreon_leases IN ROW EXCLUSIVE MODE")
+        conn.execute("SELECT name FROM patreon_leases WHERE name = %s FOR UPDATE", (name,))
+        now = utcnow()
+        cur = conn.execute("UPDATE patreon_leases SET expires_at = %s WHERE name = %s AND owner = %s AND expires_at > %s",
+                           (now + timedelta(seconds=LEASE_SECONDS), name, owner, now))
         if cur.rowcount != 1:
             raise ServiceError("patreon_lease_lost")
 
 
 def release_lease(name: str, owner: str):
-    with db.connect() as conn:
-        conn.execute("DELETE FROM patreon_leases WHERE name=? AND owner=?", (name, owner))
+    with database.connect() as conn:
+        conn.execute("DELETE FROM patreon_leases WHERE name = %s AND owner = %s", (name, owner))
 
 
 def alert(conn, kind: str, message: str):
     # Messages are fixed strings, never exception text / API bodies / identities.
-    if not conn.execute("SELECT 1 FROM patreon_alerts WHERE kind=? AND acked_at IS NULL", (kind,)).fetchone():
-        conn.execute("INSERT INTO patreon_alerts(kind,message,created_at) VALUES (?,?,?)", (kind, message, iso(utcnow())))
+    # One open alert per kind, kept by the partial unique index even outside the patreon lock.
+    conn.execute("INSERT INTO patreon_alerts (kind, message, created_at) VALUES (%s, %s, %s) "
+                 "ON CONFLICT (kind) WHERE acked_at IS NULL DO NOTHING", (kind, message, utcnow()))
+
+
+def _text_times(row) -> dict | None:
+    """A row with each time as the `isoformat()` string the rules compare and the API sends."""
+    if row is None:
+        return None
+    return {key: iso(value) if isinstance(value, datetime) else value for key, value in row.items()}
 
 
 def _member(row) -> dict | None:
     if row is None:
         return None
-    data = json.loads(row["data_json"])
-    return {**data, "last_tier": row["last_tier"], "declined_since": row["declined_since"]}
+    return {**row["data_json"], "last_tier": row["last_tier"],
+            "declined_since": iso(row["declined_since"]) if row["declined_since"] else None}
 
 
 def _members(conn) -> dict[str, dict]:
-    return {row["patreon_user_id"]: _member(row) for row in conn.execute("SELECT * FROM patreon_members")}
+    # A fixed order: Postgres returns rows in storage order, which every sync's updates reshuffle.
+    return {row["patreon_user_id"]: _member(row) for row in conn.execute("SELECT * FROM patreon_members ORDER BY patreon_user_id")}
+
+
+def _discord_links(*, discord_user_id=None, player_uuid=None, minecraft_name=None) -> list[dict]:
+    """Discord links matching any of the given values: their discord_user_id and player_uuid."""
+    # PG-MIGRATION: Linking. discord_links is still in SQLite, so it is read on its own
+    # connection (Linking does not take the patreon lock). The Linking
+    # PR reads it on the caller's connection.
+    where, params = [], []
+    for column, value in (("discord_user_id", discord_user_id), ("player_uuid", player_uuid)):
+        if value is not None:
+            where.append(f"{column} = ?")
+            params.append(value)
+    if minecraft_name is not None:
+        where.append("minecraft_name = ? COLLATE NOCASE")
+        params.append(minecraft_name)
+    if not where:
+        return []
+    with sqlite_db.connect() as lite:
+        return [dict(r) for r in lite.execute(
+            f"SELECT discord_user_id, player_uuid FROM discord_links WHERE {' OR '.join(where)}", params)]
 
 
 def _resolved_link(conn, row) -> dict:
-    link = dict(row)
+    link = _text_times(row)
     if not link["active"]:
         return link
     discord, uuid = link["discord_user_id"], link["player_uuid"]
     other = None
     if discord and not uuid:
-        other = conn.execute("SELECT * FROM discord_links WHERE discord_user_id=?", (discord,)).fetchone()
+        other = next(iter(_discord_links(discord_user_id=discord)), None)
     elif uuid and not discord:
-        other = conn.execute("SELECT * FROM discord_links WHERE player_uuid=?", (uuid,)).fetchone()
+        other = next(iter(_discord_links(player_uuid=uuid)), None)
     if other:
         for key in ("discord_user_id", "player_uuid"):
             if not link[key]:
                 # An implicit half must not give two patrons control of a subject.
-                occupied = conn.execute(f"SELECT 1 FROM patreon_links WHERE {key}=? AND active=1 AND patreon_user_id<>?", (other[key], link["patreon_user_id"])).fetchone()
+                occupied = conn.execute(f"SELECT 1 FROM patreon_links WHERE {key} = %s AND active AND patreon_user_id <> %s", (other[key], link["patreon_user_id"])).fetchone()
                 if not occupied:
                     link["resolved_" + key] = other[key]
     return link
@@ -98,9 +149,11 @@ def _clean_subjects(discord_user_id, player_uuid):
 def _link(conn, user_id: str, discord: str | None, player: str | None, method: str, force: bool, config: Config, now) -> str:
     if not user_id or not (discord or player):
         return "invalid_subject"
-    old = conn.execute("SELECT * FROM patreon_links WHERE patreon_user_id=?", (user_id,)).fetchone()
+    if "\x00" in user_id or (discord and "\x00" in discord):
+        return "invalid_subject"  # Postgres text cannot hold NUL
+    old = _text_times(conn.execute("SELECT * FROM patreon_links WHERE patreon_user_id = %s", (user_id,)).fetchone())
     # Validate the trusted pairing but leave an unspecified half dynamic.
-    pair = conn.execute("SELECT * FROM discord_links WHERE discord_user_id=? OR player_uuid=?", (discord, player)).fetchall()
+    pair = _discord_links(discord_user_id=discord, player_uuid=player)
     if pair:
         if len(pair) != 1 or (discord and pair[0]["discord_user_id"] != discord) or (player and pair[0]["player_uuid"] != player):
             return "already_linked"
@@ -112,7 +165,7 @@ def _link(conn, user_id: str, discord: str | None, player: str | None, method: s
         player = player or old["player_uuid"]
     effective_discord = discord or (pair[0]["discord_user_id"] if pair else None)
     effective_player = player or (pair[0]["player_uuid"] if pair else None)
-    conflict = conn.execute("SELECT 1 FROM patreon_links WHERE active=1 AND patreon_user_id<>? AND (discord_user_id=? OR player_uuid=?)", (user_id, effective_discord, effective_player)).fetchone()
+    conflict = conn.execute("SELECT 1 FROM patreon_links WHERE active AND patreon_user_id <> %s AND (discord_user_id = %s OR player_uuid = %s)", (user_id, effective_discord, effective_player)).fetchone()
     if conflict:
         return "already_linked"
     changed_at = iso(now) if not old or changing else old["person_changed_at"]
@@ -120,7 +173,10 @@ def _link(conn, user_id: str, discord: str | None, player: str | None, method: s
     saved_method = old["method"] if old and old["active"] and method == "auto_discord" else method
     new_event = not old or not old["active"] or changing or old["method"] != saved_method or old["discord_user_id"] != discord or old["player_uuid"] != player
     linked_at = iso(now) if new_event else old["linked_at"]
-    conn.execute("INSERT INTO patreon_links VALUES (?,?,?,?,1,?,?) ON CONFLICT(patreon_user_id) DO UPDATE SET discord_user_id=excluded.discord_user_id,player_uuid=excluded.player_uuid,method=excluded.method,active=1,linked_at=excluded.linked_at,person_changed_at=excluded.person_changed_at",
+    conn.execute("INSERT INTO patreon_links (patreon_user_id, discord_user_id, player_uuid, method, active, linked_at, person_changed_at) "
+                 "VALUES (%s, %s, %s, %s, true, %s, %s) ON CONFLICT (patreon_user_id) DO UPDATE SET discord_user_id = excluded.discord_user_id, "
+                 "player_uuid = excluded.player_uuid, method = excluded.method, active = true, linked_at = excluded.linked_at, "
+                 "person_changed_at = excluded.person_changed_at",
                  (user_id, discord, player, saved_method, linked_at, changed_at))
     return "ok"
 
@@ -128,30 +184,32 @@ def _link(conn, user_id: str, discord: str | None, player: str | None, method: s
 def create_or_update_link(patreon_user_id: str, discord_user_id: str | None = None, player_uuid: str | None = None, method: str = "oauth", *, force: bool = False, config: Config | None = None, conn=None, now=None) -> str:
     """Return ok/already_linked/relink_cooldown/invalid_subject; no implicit compute.
 
-    Optional conn participates in a caller transaction (no commit). force only
-    bypasses cooldown, never another account's subject uniqueness.
+    Optional conn participates in a caller transaction (no commit), which must hold
+    PATREON_LOCK. force only bypasses cooldown, never another account's subject uniqueness.
     """
-    config, now = config or Config.from_env(), now or utcnow()
+    config = config or Config.from_env()
     if method not in {"oauth", "staff", "import", "auto_discord"}:
         raise ServiceError("invalid_link_method")
     discord, player = _clean_subjects(discord_user_id, player_uuid)
     if conn is not None:
-        return _link(conn, str(patreon_user_id), discord, player, method, force, config, now)
-    with db.connect() as c:
-        c.execute("BEGIN IMMEDIATE")
-        return _link(c, str(patreon_user_id), discord, player, method, force, config, now)
+        return _link(conn, str(patreon_user_id), discord, player, method, force, config, now or utcnow())
+    with database.transaction(lock=PATREON_LOCK) as c:
+        return _link(c, str(patreon_user_id), discord, player, method, force, config, now or utcnow())
 
 
 def _store_member(conn, member: dict, now, config: Config):
-    old = conn.execute("SELECT * FROM patreon_members WHERE patreon_user_id=?", (member["patreon_user_id"],)).fetchone()
+    old = conn.execute("SELECT * FROM patreon_members WHERE patreon_user_id = %s", (member["patreon_user_id"],)).fetchone()
     history = _member(old) or {}
     state = resolve({**member, "last_tier": history.get("last_tier"), "declined_since": history.get("declined_since")}, None, now, config)
-    conn.execute("INSERT INTO patreon_members VALUES (?,?,?,?,?,?) ON CONFLICT(patreon_user_id) DO UPDATE SET member_id=excluded.member_id,data_json=excluded.data_json,last_tier=excluded.last_tier,declined_since=excluded.declined_since,updated_at=excluded.updated_at",
-                 (member["member_id"], member["patreon_user_id"], json.dumps(member), state["last_tier"], state["declined_since"], iso(now)))
+    conn.execute("INSERT INTO patreon_members (member_id, patreon_user_id, data_json, last_tier, declined_since, updated_at) "
+                 "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (patreon_user_id) DO UPDATE SET member_id = excluded.member_id, "
+                 "data_json = excluded.data_json, last_tier = excluded.last_tier, declined_since = excluded.declined_since, "
+                 "updated_at = excluded.updated_at",
+                 (member["member_id"], member["patreon_user_id"], database.Jsonb(member), state["last_tier"], state["declined_since"], now))
 
 
 def _set_desired(conn, target, subject, tier, grace, *, link_event=None):
-    old = conn.execute("SELECT * FROM patreon_desired WHERE target=? AND subject=?", (target, subject)).fetchone()
+    old = _text_times(conn.execute("SELECT * FROM patreon_desired WHERE target = %s AND subject = %s", (target, subject)).fetchone())
     old_tier = old["tier_key"] if old else None
     old_grace = old["grace_until"] if old else None
     new_link_event = bool(target == "discord" and link_event and (not old or old["link_event"] != link_event))
@@ -167,21 +225,23 @@ def _set_desired(conn, target, subject, tier, grace, *, link_event=None):
             dm = "link_success"
     generation = old["generation"] + 1 if old else 1
     saved_event = link_event or (old["link_event"] if old else None)
-    conn.execute("INSERT INTO patreon_desired VALUES (?,?,?,?,?,?,?) ON CONFLICT(target,subject) DO UPDATE SET tier_key=excluded.tier_key,grace_until=excluded.grace_until,dm=excluded.dm,generation=excluded.generation,link_event=excluded.link_event",
+    conn.execute("INSERT INTO patreon_desired (target, subject, tier_key, grace_until, dm, generation, link_event) "
+                 "VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (target, subject) DO UPDATE SET tier_key = excluded.tier_key, "
+                 "grace_until = excluded.grace_until, dm = excluded.dm, generation = excluded.generation, link_event = excluded.link_event",
                  (target, subject, tier, grace, dm, generation, saved_event))
 
 
 def _plan(conn, target: str, subject: str, config: Config, now):
-    desired = conn.execute("SELECT * FROM patreon_desired WHERE target=? AND subject=?", (target, subject)).fetchone()
+    desired = _text_times(conn.execute("SELECT * FROM patreon_desired WHERE target = %s AND subject = %s", (target, subject)).fetchone())
     if desired is None:
         return
-    applied = conn.execute("SELECT * FROM patreon_applied WHERE target=? AND subject=?", (target, subject)).fetchone()
-    owned = set(json.loads(applied["tiers_json"])) if applied else set()
+    applied = conn.execute("SELECT * FROM patreon_applied WHERE target = %s AND subject = %s", (target, subject)).fetchone()
+    owned = set(applied["tiers_json"]) if applied else set()
     tier = desired["tier_key"]
     remove = sorted(owned - ({tier} if tier else set()), key=config.rank)
     add = tier if tier and tier not in owned else None
     dm = desired["dm"] if not applied or applied["dm_generation"] < desired["generation"] else None
-    held = conn.execute("SELECT brake_held FROM patreon_sync_state WHERE id=1").fetchone()[0]
+    held = conn.execute("SELECT brake_held FROM patreon_sync_state WHERE id = 1").fetchone()["brake_held"]
     if held:
         remove = []
         if config.rank(tier) < max((config.rank(k) for k in owned), default=0):
@@ -196,25 +256,26 @@ def _plan(conn, target: str, subject: str, config: Config, now):
             logger.warning("Patreon shadow target=%s add=%s remove=%s dm=%s", target, add, remove, logged_dm)
         return
     # Dispatched rows are immutable: their ids may be in an applier's hands.
-    dispatched = conn.execute("SELECT 1 FROM patreon_changes WHERE target=? AND subject=? AND acked_at IS NULL AND cancelled_at IS NULL AND dispatched_at IS NOT NULL", (target, subject)).fetchone()
+    dispatched = conn.execute("SELECT 1 FROM patreon_changes WHERE target = %s AND subject = %s AND acked_at IS NULL AND cancelled_at IS NULL AND dispatched_at IS NOT NULL", (target, subject)).fetchone()
     if dispatched:
         return
-    pending = conn.execute("SELECT * FROM patreon_changes WHERE target=? AND subject=? AND acked_at IS NULL AND cancelled_at IS NULL", (target, subject)).fetchone()
-    if pending and pending["add_tier"] == add and json.loads(pending["remove_json"]) == remove and pending["dm"] == dm and pending["generation"] == desired["generation"]:
+    pending = conn.execute("SELECT * FROM patreon_changes WHERE target = %s AND subject = %s AND acked_at IS NULL AND cancelled_at IS NULL", (target, subject)).fetchone()
+    if pending and pending["add_tier"] == add and pending["remove_json"] == remove and pending["dm"] == dm and pending["generation"] == desired["generation"]:
         return
-    conn.execute("UPDATE patreon_changes SET cancelled_at=? WHERE target=? AND subject=? AND acked_at IS NULL AND cancelled_at IS NULL", (iso(now), target, subject))
+    conn.execute("UPDATE patreon_changes SET cancelled_at = %s WHERE target = %s AND subject = %s AND acked_at IS NULL AND cancelled_at IS NULL", (now, target, subject))
     if add or remove or dm:
         # Keep the real dm on the row so acknowledgement marks it delivered.
         # dm_suppressed hides it from the outbox even after the env flag is cleared.
-        suppressed = int(bool(config.suppress_dms and target == "discord" and dm))
-        conn.execute("INSERT INTO patreon_changes(target,subject,add_tier,remove_json,dm,grace_until,generation,created_at,dm_suppressed) VALUES (?,?,?,?,?,?,?,?,?)",
-                     (target, subject, add, json.dumps(remove), dm, desired["grace_until"] if dm == "payment_declined" else None, desired["generation"], iso(now), suppressed))
+        suppressed = bool(config.suppress_dms and target == "discord" and dm)
+        conn.execute("INSERT INTO patreon_changes (target, subject, add_tier, remove_json, dm, grace_until, generation, created_at, dm_suppressed) "
+                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                     (target, subject, add, database.Jsonb(remove), dm, desired["grace_until"] if dm == "payment_declined" else None, desired["generation"], now, suppressed))
 
 
 def _compute(conn, config: Config, now, *, brake_check=False, link_success_user=None):
     members = _members(conn)
     targets = {}
-    for row in conn.execute("SELECT * FROM patreon_links WHERE active=1").fetchall():
+    for row in conn.execute("SELECT * FROM patreon_links WHERE active").fetchall():
         link = _resolved_link(conn, row)
         state = resolve(members.get(link["patreon_user_id"]), link, now, config)
         for target, (subject, tier) in state["targets"].items():
@@ -230,16 +291,17 @@ def _compute(conn, config: Config, now, *, brake_check=False, link_success_user=
     if brake_check:
         granted = lowered = 0
         for row in conn.execute("SELECT a.tiers_json,d.tier_key,d.generation,p.generation AS approved_generation FROM patreon_applied a LEFT JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject LEFT JOIN patreon_brake_approvals p ON p.target=a.target AND p.subject=a.subject"):
-            rank = max((config.rank(k) for k in json.loads(row["tiers_json"])), default=0)
+            rank = max((config.rank(k) for k in row["tiers_json"]), default=0)
             if rank:
                 granted += 1
                 lowered += config.rank(row["tier_key"]) < rank and row["generation"] != row["approved_generation"]
         if lowered >= 5 and granted and lowered / granted > config.removal_fraction:
-            conn.execute("UPDATE patreon_sync_state SET brake_held=1 WHERE id=1")
+            conn.execute("UPDATE patreon_sync_state SET brake_held = true WHERE id = 1")
             # Previously dispatched removals cannot be recalled; poll suppresses
             # new removal deliveries. Their ack remains truthful if in flight.
             alert(conn, "brake_held", "Mass removal brake held tier reductions; staff review required.")
-    for row in conn.execute("SELECT target,subject FROM patreon_desired").fetchall():
+    # In key order, as SQLite's primary-key scan gave them, so outbox ids come out in the same order.
+    for row in conn.execute("SELECT target, subject FROM patreon_desired ORDER BY target, subject").fetchall():
         _plan(conn, row["target"], row["subject"], config, now)
 
 
@@ -247,7 +309,8 @@ def recompute_link(patreon_user_id: str, *, config: Config | None = None, conn=N
     """Recompute links and enqueue differences, including a changed/missing half.
 
     Recomputing the full identity set also clears former subjects on relink.
-    Returns this user's effective entitlement. Optional conn shares transaction.
+    Returns this user's effective entitlement. Optional conn shares transaction,
+    which must hold PATREON_LOCK.
     """
     config = config or Config.from_env()
     def compute(c):
@@ -255,31 +318,31 @@ def recompute_link(patreon_user_id: str, *, config: Config | None = None, conn=N
         return _status(c, config, patreon_user_id=patreon_user_id)
     if conn is not None:
         return compute(conn)
-    with db.connect() as c:
-        c.execute("BEGIN IMMEDIATE")
+    with database.transaction(lock=PATREON_LOCK) as c:
         return compute(c)
 
 
 def unlink(*, patreon_user_id=None, discord_user_id=None, player_uuid=None, config=None) -> dict:
     config = config or Config.from_env()
     discord_user_id, player_uuid = _clean_subjects(discord_user_id, player_uuid)
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    with database.transaction(lock=PATREON_LOCK) as conn:
         row = _find_link(conn, patreon_user_id, discord_user_id, player_uuid)
         if not row:
             return {"unlinked": False}
-        conn.execute("UPDATE patreon_links SET active=0 WHERE patreon_user_id=?", (row["patreon_user_id"],))
+        conn.execute("UPDATE patreon_links SET active = false WHERE patreon_user_id = %s", (row["patreon_user_id"],))
         _compute(conn, config, utcnow())
         return {"unlinked": True}
 
 
 def _find_link(conn, patreon_user_id=None, discord_user_id=None, player_uuid=None):
     if patreon_user_id:
-        return conn.execute("SELECT * FROM patreon_links WHERE active=1 AND patreon_user_id=?", (patreon_user_id,)).fetchone()
-    for row in conn.execute("SELECT * FROM patreon_links WHERE active=1").fetchall():
+        if "\x00" in patreon_user_id:
+            return None
+        return _text_times(conn.execute("SELECT * FROM patreon_links WHERE active AND patreon_user_id = %s", (patreon_user_id,)).fetchone())
+    for row in conn.execute("SELECT * FROM patreon_links WHERE active").fetchall():
         link = _resolved_link(conn, row)
         if (discord_user_id and discord_user_id == (link["discord_user_id"] or link.get("resolved_discord_user_id"))) or (player_uuid and player_uuid == (link["player_uuid"] or link.get("resolved_player_uuid"))):
-            return row
+            return _text_times(row)
     return None
 
 
@@ -290,7 +353,7 @@ def _status(conn, config, patreon_user_id=None, discord_user_id=None, player_uui
     if not row:
         return result
     link = _resolved_link(conn, row)
-    member = _member(conn.execute("SELECT * FROM patreon_members WHERE patreon_user_id=?", (row["patreon_user_id"],)).fetchone()) or {}
+    member = _member(conn.execute("SELECT * FROM patreon_members WHERE patreon_user_id = %s", (row["patreon_user_id"],)).fetchone()) or {}
     state = resolve(member, link, utcnow(), config)
     return {**result, "linked": True, "method": link["method"], "patreon_name": member.get("full_name"),
             "tier_key": state["tier_key"], "tier_name": config.name(state["tier_key"]),
@@ -300,15 +363,18 @@ def _status(conn, config, patreon_user_id=None, discord_user_id=None, player_uui
 
 def status(*, discord_user_id=None, player_uuid=None, config=None):
     discord, player = _clean_subjects(discord_user_id, player_uuid)
-    with db.connect() as conn:
+    with database.connect() as conn:
         return _status(conn, config or Config.from_env(), discord_user_id=discord, player_uuid=player)
 
 
 def _sync_failure():
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute("UPDATE patreon_sync_state SET last_sync_at=?,last_sync_ok=0,consecutive_failures=consecutive_failures+1 WHERE id=1", (iso(utcnow()),))
-        if conn.execute("SELECT consecutive_failures FROM patreon_sync_state WHERE id=1").fetchone()[0] >= 3:
+    with database.connect() as conn:
+        # The UPDATE row-locks the counter until commit, so two failures count twice.
+        failures = conn.execute(
+            "UPDATE patreon_sync_state SET last_sync_at = %s, last_sync_ok = false, "
+            "consecutive_failures = consecutive_failures + 1 WHERE id = 1 RETURNING consecutive_failures",
+            (utcnow(),)).fetchone()["consecutive_failures"]
+        if failures >= 3:
             alert(conn, "sync_failed", "Patreon sync failed three or more consecutive times; existing perks retained.")
 
 
@@ -328,11 +394,11 @@ def _run_fetch(*, config, client, member_id=None):
     try:
         # Fetch and validate everything before opening the write transaction.
         fetched = [client.member(member_id)] if member_id else client.members()
-        now = utcnow()
-        with db.connect() as conn:
-            conn.execute("BEGIN IMMEDIATE")
-            lease = conn.execute("SELECT * FROM patreon_leases WHERE name='sync'").fetchone()
-            if not lease or lease["owner"] != owner or parse(lease["expires_at"]) <= now:
+        with database.transaction(lock=PATREON_LOCK) as conn:
+            # Held until commit: the lease cannot be taken over while these members are stored.
+            lease = conn.execute("SELECT owner, expires_at FROM patreon_leases WHERE name = 'sync' FOR UPDATE").fetchone()
+            now = utcnow()
+            if not lease or lease["owner"] != owner or lease["expires_at"] <= now:
                 raise ServiceError("patreon_lease_lost")
             for member in fetched:
                 _store_member(conn, member, now, config)
@@ -345,12 +411,16 @@ def _run_fetch(*, config, client, member_id=None):
                 if entitled_tier(member, config) and member.get("discord_user_id"):
                     # A tombstone (explicit unlink) must stay disconnected.
                     # Auto-link only when no link row exists at all.
-                    existing = conn.execute("SELECT 1 FROM patreon_links WHERE patreon_user_id=?", (member["patreon_user_id"],)).fetchone()
+                    existing = conn.execute("SELECT 1 FROM patreon_links WHERE patreon_user_id = %s", (member["patreon_user_id"],)).fetchone()
                     if existing is None:
                         _link(conn, member["patreon_user_id"], member["discord_user_id"], None, "auto_discord", False, config, now)
             _compute(conn, config, now, brake_check=True)
             if not member_id:
-                conn.execute("UPDATE patreon_sync_state SET last_sync_at=?,last_sync_ok=1,consecutive_failures=0 WHERE id=1", (iso(now),))
+                conn.execute("UPDATE patreon_sync_state SET last_sync_at = %s, last_sync_ok = true, consecutive_failures = 0 WHERE id = 1", (now,))
+            # Member, link, outbox and sync-state writes may all wait. The held
+            # lease row cannot change owner; its deadline must still be live.
+            if lease["owner"] != owner or lease["expires_at"] <= utcnow():
+                raise ServiceError("patreon_lease_lost")
         return {"ok": True, "members": len(fetched), "brake_held": health(config)["brake_held"]}
     except Exception:
         # No raw exception strings: HTTP bodies and parse failures may contain PII.
@@ -426,21 +496,20 @@ def list_changes(target: str, *, config=None) -> dict:
     config = config or Config.from_env()
     if not config.apply:
         return {"changes": []}
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        held = conn.execute("SELECT brake_held FROM patreon_sync_state WHERE id=1").fetchone()[0]
-        rows = conn.execute("SELECT * FROM patreon_changes WHERE target=? AND acked_at IS NULL AND cancelled_at IS NULL ORDER BY id", (target,)).fetchall()
+    with database.transaction(lock=PATREON_LOCK) as conn:
+        held = conn.execute("SELECT brake_held FROM patreon_sync_state WHERE id = 1").fetchone()["brake_held"]
+        rows = conn.execute("SELECT * FROM patreon_changes WHERE target = %s AND acked_at IS NULL AND cancelled_at IS NULL ORDER BY id", (target,)).fetchall()
         changes = []
         for row in rows:
-            if held and json.loads(row["remove_json"]):
+            if held and row["remove_json"]:
                 continue
-            conn.execute("UPDATE patreon_changes SET dispatched_at=COALESCE(dispatched_at,?) WHERE id=?", (iso(utcnow()), row["id"]))
-            change = {"id": row["id"], "discord_user_id" if target == "discord" else "player_uuid": row["subject"], "add_tier": row["add_tier"], "remove_tiers": json.loads(row["remove_json"])}
+            conn.execute("UPDATE patreon_changes SET dispatched_at = COALESCE(dispatched_at, %s) WHERE id = %s", (utcnow(), row["id"]))
+            change = {"id": row["id"], "discord_user_id" if target == "discord" else "player_uuid": row["subject"], "add_tier": row["add_tier"], "remove_tiers": row["remove_json"]}
             if target == "discord":
                 hidden = config.suppress_dms or row["dm_suppressed"]
                 change.update(dm=None if hidden else row["dm"], tier_name=config.name(row["add_tier"]))
                 if row["grace_until"]:
-                    change["grace_until"] = row["grace_until"]
+                    change["grace_until"] = iso(row["grace_until"])
             changes.append(change)
         return {"changes": changes}
 
@@ -450,39 +519,40 @@ def ack_changes(target: str, ids: list[int], *, config=None) -> dict:
     acked = []
     if not config.apply:
         return {"acked": acked}
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    with database.transaction(lock=PATREON_LOCK) as conn:
         for change_id in dict.fromkeys(ids):
-            row = conn.execute("SELECT * FROM patreon_changes WHERE id=? AND target=? AND cancelled_at IS NULL", (change_id, target)).fetchone()
+            row = conn.execute("SELECT * FROM patreon_changes WHERE id = %s AND target = %s AND cancelled_at IS NULL", (change_id, target)).fetchone()
             if row is None or row["dispatched_at"] is None:
                 continue
             acked.append(change_id)
             if row["acked_at"]:
                 continue
-            applied = conn.execute("SELECT * FROM patreon_applied WHERE target=? AND subject=?", (target, row["subject"])).fetchone()
-            tiers = set(json.loads(applied["tiers_json"])) if applied else set()
-            tiers.difference_update(json.loads(row["remove_json"]))
+            applied = conn.execute("SELECT * FROM patreon_applied WHERE target = %s AND subject = %s", (target, row["subject"])).fetchone()
+            tiers = set(applied["tiers_json"]) if applied else set()
+            tiers.difference_update(row["remove_json"])
             if row["add_tier"]:
                 tiers.add(row["add_tier"])
             dm_gen = applied["dm_generation"] if applied else 0
             if row["dm"]:
                 dm_gen = max(dm_gen, row["generation"])
             ever = bool(tiers or (applied and applied["ever_granted"]))
-            conn.execute("INSERT INTO patreon_applied VALUES (?,?,?,?,?) ON CONFLICT(target,subject) DO UPDATE SET tiers_json=excluded.tiers_json,ever_granted=excluded.ever_granted,dm_generation=excluded.dm_generation",
-                         (target, row["subject"], json.dumps(sorted(tiers)), int(ever), dm_gen))
-            conn.execute("UPDATE patreon_changes SET acked_at=? WHERE id=?", (iso(utcnow()), change_id))
+            conn.execute("INSERT INTO patreon_applied (target, subject, tiers_json, ever_granted, dm_generation) VALUES (%s, %s, %s, %s, %s) "
+                         "ON CONFLICT (target, subject) DO UPDATE SET tiers_json = excluded.tiers_json, ever_granted = excluded.ever_granted, "
+                         "dm_generation = excluded.dm_generation",
+                         (target, row["subject"], database.Jsonb(sorted(tiers)), ever, dm_gen))
+            conn.execute("UPDATE patreon_changes SET acked_at = %s WHERE id = %s", (utcnow(), change_id))
             _plan(conn, target, row["subject"], config, utcnow())
     return {"acked": acked}
 
 
 def roster(target: str, *, config=None) -> dict:
     config = config or Config.from_env()
-    with db.connect() as conn:
-        held = conn.execute("SELECT brake_held FROM patreon_sync_state WHERE id=1").fetchone()[0]
+    with database.transaction(isolation="repeatable read", read_only=True) as conn:
+        held = conn.execute("SELECT brake_held FROM patreon_sync_state WHERE id = 1").fetchone()["brake_held"]
         members = []
-        for row in conn.execute("SELECT a.*,d.tier_key FROM patreon_applied a LEFT JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject WHERE a.target=? AND a.ever_granted=1 ORDER BY a.subject", (target,)):
+        for row in conn.execute("SELECT a.subject, a.tiers_json, d.tier_key FROM patreon_applied a LEFT JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject WHERE a.target = %s AND a.ever_granted ORDER BY a.subject", (target,)):
             tier = row["tier_key"]
-            owned = json.loads(row["tiers_json"])
+            owned = list(row["tiers_json"])
             if not config.apply or held:
                 tier = max(owned + ([tier] if tier and config.apply else []), key=config.rank, default=None)
             members.append({"discord_user_id" if target == "discord" else "player_uuid": row["subject"], "tier_key": tier})
@@ -491,24 +561,24 @@ def roster(target: str, *, config=None) -> dict:
 
 def release_brake(*, config=None):
     config = config or Config.from_env()
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute("UPDATE patreon_sync_state SET brake_held=0 WHERE id=1")
+    with database.transaction(lock=PATREON_LOCK) as conn:
+        conn.execute("UPDATE patreon_sync_state SET brake_held = false WHERE id = 1")
         _compute(conn, config, utcnow())
         # Persist approval for these transitions, even if appliers haven't
         # acknowledged them before the next sync or process restart.
         for row in conn.execute("SELECT a.target,a.subject,a.tiers_json,d.tier_key,d.generation FROM patreon_applied a JOIN patreon_desired d ON d.target=a.target AND d.subject=a.subject").fetchall():
-            if config.rank(row["tier_key"]) < max((config.rank(k) for k in json.loads(row["tiers_json"])), default=0):
-                conn.execute("INSERT INTO patreon_brake_approvals VALUES (?,?,?) ON CONFLICT(target,subject) DO UPDATE SET generation=excluded.generation", (row["target"], row["subject"], row["generation"]))
+            if config.rank(row["tier_key"]) < max((config.rank(k) for k in row["tiers_json"]), default=0):
+                conn.execute("INSERT INTO patreon_brake_approvals (target, subject, generation) VALUES (%s, %s, %s) "
+                             "ON CONFLICT (target, subject) DO UPDATE SET generation = excluded.generation", (row["target"], row["subject"], row["generation"]))
     return {"released": True}
 
 
 def health(config=None):
     config = config or Config.from_env()
-    with db.connect() as conn:
-        state = dict(conn.execute("SELECT * FROM patreon_sync_state WHERE id=1").fetchone())
+    with database.transaction(isolation="repeatable read", read_only=True) as conn:
+        state = _text_times(conn.execute("SELECT * FROM patreon_sync_state WHERE id = 1").fetchone())
         members = _members(conn)
-        linked = {r[0] for r in conn.execute("SELECT patreon_user_id FROM patreon_links WHERE active=1")}
+        linked = {r["patreon_user_id"] for r in conn.execute("SELECT patreon_user_id FROM patreon_links WHERE active")}
         entitled = {user for user, member in members.items() if resolve(member, None, utcnow(), config)["tier_key"]}
         return {"enabled": config.enabled, "apply": config.apply, "last_sync_at": state["last_sync_at"], "last_sync_ok": None if state["last_sync_ok"] is None else bool(state["last_sync_ok"]),
                 "consecutive_failures": state["consecutive_failures"], "brake_held": bool(state["brake_held"]),
@@ -516,21 +586,21 @@ def health(config=None):
 
 
 def alerts():
-    with db.connect() as conn:
-        return {"alerts": [dict(r) for r in conn.execute("SELECT id,kind,message,created_at FROM patreon_alerts WHERE acked_at IS NULL ORDER BY id")]}
+    with database.connect() as conn:
+        return {"alerts": [_text_times(r) for r in conn.execute("SELECT id,kind,message,created_at FROM patreon_alerts WHERE acked_at IS NULL ORDER BY id")]}
 
 
 def ack_alerts(ids):
-    with db.connect() as conn:
+    with database.connect() as conn:
         for alert_id in ids:
-            conn.execute("UPDATE patreon_alerts SET acked_at=? WHERE id=? AND acked_at IS NULL", (iso(utcnow()), alert_id))
+            conn.execute("UPDATE patreon_alerts SET acked_at = %s WHERE id = %s AND acked_at IS NULL", (utcnow(), alert_id))
     return {"acked": ids}
 
 
 def unlinked(config=None):
     config = config or Config.from_env()
-    with db.connect() as conn:
-        linked = {r[0] for r in conn.execute("SELECT patreon_user_id FROM patreon_links WHERE active=1")}
+    with database.transaction(isolation="repeatable read", read_only=True) as conn:
+        linked = {r["patreon_user_id"] for r in conn.execute("SELECT patreon_user_id FROM patreon_links WHERE active")}
         result = []
         for user, member in _members(conn).items():
             tier = resolve(member, None, utcnow(), config)["tier_key"]
@@ -542,10 +612,10 @@ def unlinked(config=None):
 def lookup(*, discord_user_id=None, player_uuid=None, email=None, minecraft_name=None, config=None):
     config = config or Config.from_env()
     discord, player = _clean_subjects(discord_user_id, player_uuid)
-    with db.connect() as conn:
+    with database.transaction(isolation="repeatable read", read_only=True) as conn:
         if minecraft_name:
-            pair = conn.execute("SELECT player_uuid FROM discord_links WHERE minecraft_name=? COLLATE NOCASE", (minecraft_name,)).fetchone()
-            player = pair[0] if pair else None
+            pair = next(iter(_discord_links(minecraft_name=minecraft_name)), None)
+            player = pair["player_uuid"] if pair else None
         link = _find_link(conn, discord_user_id=discord, player_uuid=player)
         member = None
         if email:
@@ -555,15 +625,15 @@ def lookup(*, discord_user_id=None, player_uuid=None, email=None, minecraft_name
             member = matches[0] if matches else None
             link = _find_link(conn, patreon_user_id=member["patreon_user_id"]) if member else None
         elif link:
-            member = _member(conn.execute("SELECT * FROM patreon_members WHERE patreon_user_id=?", (link["patreon_user_id"],)).fetchone())
-        return {"found": bool(member or link), "member": member, "link": dict(link) if link else None, "tier_key": resolve(member, None, utcnow(), config)["tier_key"]}
+            member = _member(conn.execute("SELECT * FROM patreon_members WHERE patreon_user_id = %s", (link["patreon_user_id"],)).fetchone())
+        # active stays 0/1 in the reply, as it was.
+        return {"found": bool(member or link), "member": member, "link": {**link, "active": int(link["active"])} if link else None, "tier_key": resolve(member, None, utcnow(), config)["tier_key"]}
 
 
 def staff_link(*, patreon_email=None, patreon_user_id=None, discord_user_id=None, player_uuid=None, force=False, config=None):
     config = config or Config.from_env()
     discord, player = _clean_subjects(discord_user_id, player_uuid)
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    with database.transaction(lock=PATREON_LOCK) as conn:
         if patreon_email:
             matches = [m for m in _members(conn).values() if str(m.get("email") or "").casefold() == patreon_email.strip().casefold()]
             if len(matches) != 1:
@@ -579,8 +649,7 @@ def staff_link(*, patreon_email=None, patreon_user_id=None, discord_user_id=None
 def import_links(links: list[dict], grants: list[dict], *, dry_run=True, config=None):
     config = config or Config.from_env()
     report = {"linked": [], "merged": [], "unmatched": [], "conflicts": [], "grants_seeded": 0}
-    with db.connect() as conn:
-        conn.execute("BEGIN IMMEDIATE")
+    with database.transaction(lock=PATREON_LOCK) as conn:
         members = _members(conn)
         for item in links:
             email = str(item.get("patreon_email") or "").strip()
@@ -592,7 +661,7 @@ def import_links(links: list[dict], grants: list[dict], *, dry_run=True, config=
                 report["conflicts"].append({**item, "detail": "ambiguous_patreon_email"})
                 continue
             user = matches[0]["patreon_user_id"]
-            old = conn.execute("SELECT * FROM patreon_links WHERE patreon_user_id=? AND active=1", (user,)).fetchone()
+            old = conn.execute("SELECT 1 FROM patreon_links WHERE patreon_user_id = %s AND active", (user,)).fetchone()
             try:
                 _, player = _clean_subjects(None, item.get("player_uuid"))
                 if not player:
@@ -609,13 +678,14 @@ def import_links(links: list[dict], grants: list[dict], *, dry_run=True, config=
             tier = item.get("tier_key")
             if not player or tier not in {t.key for t in config.tiers}:
                 raise ServiceError("invalid_import_grant")
-            old = conn.execute("SELECT * FROM patreon_applied WHERE target='luckperms' AND subject=?", (player,)).fetchone()
-            owned = set(json.loads(old["tiers_json"])) if old else set()
+            old = conn.execute("SELECT tiers_json FROM patreon_applied WHERE target = 'luckperms' AND subject = %s", (player,)).fetchone()
+            owned = set(old["tiers_json"]) if old else set()
             if tier not in owned:
                 owned.add(tier)
-                conn.execute("INSERT INTO patreon_applied(target,subject,tiers_json,ever_granted) VALUES ('luckperms',?,?,1) ON CONFLICT(target,subject) DO UPDATE SET tiers_json=excluded.tiers_json,ever_granted=1", (player, json.dumps(sorted(owned))))
+                conn.execute("INSERT INTO patreon_applied (target, subject, tiers_json, ever_granted) VALUES ('luckperms', %s, %s, true) "
+                             "ON CONFLICT (target, subject) DO UPDATE SET tiers_json = excluded.tiers_json, ever_granted = true", (player, database.Jsonb(sorted(owned))))
                 report["grants_seeded"] += 1
         _compute(conn, config, utcnow())
         if dry_run:
-            conn.rollback()
+            conn.rollback()  # also releases the patreon lock
     return report

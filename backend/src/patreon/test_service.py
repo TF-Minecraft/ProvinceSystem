@@ -2,11 +2,17 @@ from dataclasses import replace
 from datetime import timedelta
 import uuid
 import pytest
+from src.auth import testing
+from src.database.migrate import migrate
 from src.patreon import service as s
 from src.patreon.config import Config
 from src.patreon.resolver import iso, utcnow
 
+# Patreon tables are in Postgres; discord_links is still in SQLite (the `database` fixture).
+pytestmark = pytest.mark.usefixtures("postgres")
+
 CONFIG = Config(enabled=True, apply=True)
+PATREON_TABLES = ("patreon_members", "patreon_applied", "patreon_desired", "patreon_changes", "patreon_links")
 
 
 def player(n=1):
@@ -43,9 +49,9 @@ def ack(rows, target="discord", config=CONFIG):
     return s.ack_changes(target, [r["id"] for r in rows], config=config)
 
 
-def snapshot(database):
-    with database.connect() as conn:
-        return {table: [tuple(r) for r in conn.execute("SELECT * FROM " + table)] for table in ("patreon_members", "patreon_applied", "patreon_desired", "patreon_changes", "patreon_links")}
+def snapshot(database=None):
+    """Every row of the Patreon state tables, in key order."""
+    return {table: testing.rows(f"SELECT * FROM {table} ORDER BY 1, 2") for table in PATREON_TABLES}
 
 
 def test_auto_link_and_ack_only_applied(database):
@@ -126,8 +132,7 @@ def test_declined_notification_once_then_expiry(database):
     ack(notification)
     sync([declined])
     assert changes() == []
-    with database.connect() as conn:
-        conn.execute("UPDATE patreon_members SET declined_since=?", (iso(utcnow() - timedelta(days=8)),))
+    testing.execute("UPDATE patreon_members SET declined_since = %s", (utcnow() - timedelta(days=8),))
     s.recompute_link("1", config=CONFIG)
     ended = changes()
     assert ended[0]["remove_tiers"] == ["noble"] and ended[0]["dm"] == "perks_ended"
@@ -150,8 +155,7 @@ def test_shadow_then_apply_next_sync(database, caplog):
     shadow = replace(CONFIG, apply=False)
     sync([member()], shadow)
     assert changes(config=shadow) == []
-    with database.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_changes").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_changes") == 0
     assert "shadow" in caplog.text and "example.com" not in caplog.text
     sync([member()])
     assert changes()[0]["add_tier"] == "noble"
@@ -237,8 +241,7 @@ def test_lease_exclusion_and_expiry(database):
     owner = s.acquire_lease()
     assert owner and s.acquire_lease() is None
     assert s.sync_now(config=CONFIG, client=FakeClient([]))["detail"] == "patreon_sync_busy"
-    with database.connect() as conn:
-        conn.execute("UPDATE patreon_leases SET expires_at=?", (iso(utcnow() - timedelta(seconds=1)),))
+    testing.execute("UPDATE patreon_leases SET expires_at = %s", (utcnow() - timedelta(seconds=1),))
     newer = s.acquire_lease()
     assert newer and newer != owner
     s.release_lease("sync", owner)
@@ -260,8 +263,7 @@ def test_member_refresh_and_absent_members(database):
 
 def test_cross_target_acks_and_cancelled_rows_do_not_grant(database):
     sync([member()])
-    with database.connect() as conn:
-        old_id = conn.execute("SELECT id FROM patreon_changes").fetchone()[0]
+    old_id = testing.value("SELECT id FROM patreon_changes")
     sync([member(tier="ascended")])
     assert s.ack_changes("discord", [old_id], config=CONFIG)["acked"] == []
     row = changes()[0]
@@ -301,8 +303,7 @@ def test_transaction_failure_after_fetch_rolls_back_all_members(database, monkey
 def test_lost_sync_lease_does_not_write(database):
     class LostLeaseClient(FakeClient):
         def members(self):
-            with database.connect() as conn:
-                conn.execute("UPDATE patreon_leases SET owner='another-process' WHERE name='sync'")
+            testing.execute("UPDATE patreon_leases SET owner = 'another-process' WHERE name = 'sync'")
             return self.rows
     before = snapshot(database)
     assert not s.sync_now(config=CONFIG, client=LostLeaseClient([member()]))["ok"]
@@ -333,8 +334,8 @@ def test_existing_discord_pair_is_dynamic_not_copied(database):
     with database.connect() as conn:
         conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,linked_at) VALUES (?,?,?)", (player(), "111", iso(utcnow())))
     sync([member()])
+    assert testing.value("SELECT player_uuid FROM patreon_links") is None
     with database.connect() as conn:
-        assert conn.execute("SELECT player_uuid FROM patreon_links").fetchone()[0] is None
         conn.execute("UPDATE discord_links SET player_uuid=?", (player(2),))
     sync([member()])
     ranks = changes("luckperms")
@@ -379,9 +380,8 @@ def test_suppress_dms_hides_outgoing_dm_and_ack_consumes_it(database, monkeypatc
     sync([member()], config)
     outgoing = changes(config=config)
     assert outgoing[0]["add_tier"] == "noble" and outgoing[0]["remove_tiers"] == [] and outgoing[0]["dm"] is None
-    with database.connect() as conn:
-        stored = conn.execute("SELECT dm, dm_suppressed FROM patreon_changes").fetchone()
-        assert stored["dm"] == "tier_granted" and stored["dm_suppressed"] == 1
+    stored = testing.rows("SELECT dm, dm_suppressed FROM patreon_changes")[0]
+    assert stored["dm"] == "tier_granted" and stored["dm_suppressed"] is True
     monkeypatch.setenv("PATREON_SUPPRESS_DMS", "0")
     revealed = Config.from_env()
     assert changes(config=revealed)[0]["dm"] is None
@@ -395,12 +395,15 @@ def test_suppress_dms_hides_outgoing_dm_and_ack_consumes_it(database, monkeypatc
     assert changes(config=revealed) == []
 
 
-def test_schema_initialisation_preserves_entitlement_history(database):
+def test_schema_initialisation_preserves_entitlement_history(database, postgres):
     sync([member()])
-    before = snapshot(database)
-    database.migrate()
-    database.migrate()
-    assert snapshot(database) == before
+    testing.execute("UPDATE patreon_sync_state SET brake_held = true, consecutive_failures = 2")
+    before = snapshot(database), testing.rows("SELECT * FROM patreon_sync_state")
+    # Start-up migrates and seeds again; the seed row must not reset the sync state.
+    migrate(postgres, seed=True)
+    migrate(postgres, seed=True)
+    assert (snapshot(database), testing.rows("SELECT * FROM patreon_sync_state")) == before
+    testing.execute("UPDATE patreon_sync_state SET brake_held = false")
     assert changes()[0]["add_tier"] == "noble"
 
 
@@ -431,3 +434,13 @@ def test_auto_link_only_when_no_link_row_exists(database):
     assert s.status(discord_user_id="222", config=CONFIG)["method"] == "staff"
     assert not s.status(discord_user_id="444", config=CONFIG)["linked"]
     assert not s.status(discord_user_id="555", config=CONFIG)["linked"]
+
+
+def test_subjects_postgres_cannot_hold_never_reach_it(database):
+    sync([member()])
+    assert s.status(discord_user_id="111\x00", config=CONFIG)["linked"] is False
+    assert s.create_or_update_link("1\x00", "111", config=CONFIG) == "invalid_subject"
+    assert s.create_or_update_link("9", "999\x00", config=CONFIG) == "invalid_subject"
+    assert s.unlink(patreon_user_id="1\x00", config=CONFIG) == {"unlinked": False}
+    with pytest.raises(s.ServiceError, match="invalid_subject"):
+        s.staff_link(patreon_user_id="1\x00", discord_user_id="111", config=CONFIG)

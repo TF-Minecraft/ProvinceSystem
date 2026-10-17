@@ -38,7 +38,7 @@ def test_activity_is_none_when_unknown_or_unconfigured(database, coreprotect, mo
     assert account_overview.activity(PLAYER) is None
 
 
-def test_rank_names_the_heaviest_group(database):
+def test_rank_names_the_heaviest_group(database, postgres):
     assert account_overview.rank(ALICE) is None
     mirror.replace_snapshot(snapshot())
     assert account_overview.rank(ALICE) == "Commoner"

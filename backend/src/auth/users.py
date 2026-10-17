@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import secrets
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
@@ -242,19 +241,25 @@ def session_user(token: str | None) -> dict | None:
 def session_user_in(conn, token: str | None, *, lock: bool = False) -> dict | None:
     """Session user on the caller's connection, so staff checks can run inside a write.
 
-    Staff writes pass `lock=True`: the session and user rows are held FOR SHARE until
-    the caller commits, so a demotion or revocation either waits for the write or
-    lands first and is seen by it. Ordinary reads take no lock.
+    Staff writes pass `lock=True`: lock the user FOR SHARE before the session,
+    matching staff demotion/revocation order. Re-read the session and role after
+    waits; a changed session owner must not bypass the user lock. Ordinary reads
+    take no lock.
     """
     if not token or len(token) > _TOKEN_MAX:
         return None
-    if isinstance(conn, sqlite3.Connection):
-        # PG-MIGRATION: until the LuckPerms area converts, luckperms/changes.py passes its
-        # SQLite connection. Sessions are in Postgres now, so read them there; nothing holds
-        # them for the caller's write meanwhile, so a lock cannot be honoured.
-        if lock:
-            raise TypeError("session_user_in(lock=True) needs a Postgres connection")
-        return session_user(token)
+    digest = hash_secret(token)
+    params = [digest]
+    if lock:
+        # The subquery only reads the session. Take no session lock until its user
+        # is held: staff operations lock users before deleting their sessions.
+        owner = conn.execute(
+            "SELECT id FROM users WHERE id = (SELECT user_id FROM user_sessions WHERE token_hash = %s) FOR SHARE",
+            (digest,),
+        ).fetchone()
+        if owner is None:
+            return None
+        params.append(owner["id"])
     row = conn.execute(
         f"""
         SELECT s.id AS session_id, s.expires_at, s.guild_member, s.guild_checked_at,
@@ -264,9 +269,9 @@ def session_user_in(conn, token: str | None, *, lock: bool = False) -> dict | No
         FROM user_sessions s JOIN users u ON u.id = s.user_id
         LEFT JOIN users a ON a.id = s.acting_user_id
         WHERE s.token_hash = %s
-        {"FOR SHARE OF s, u" if lock else ""}
+        {"AND s.user_id = %s FOR SHARE OF s" if lock else ""}
         """,
-        (hash_secret(token),),
+        params,
     ).fetchone()
     if row is None or row["expires_at"] <= _utcnow():
         return None

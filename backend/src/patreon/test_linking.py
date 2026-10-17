@@ -12,11 +12,14 @@ from fastapi.testclient import TestClient
 
 from src.api import characters_routes
 from src.api import patreon_routes as routes
+from src.auth import testing
 from src.patreon import linking
 from src.patreon.client import PatreonError
 from src.patreon.resolver import iso, parse, utcnow
 from src.patreon import service as s
 from src.patreon.test_service import CONFIG, member as patron, player, sync, changes, ack
+
+pytestmark = pytest.mark.usefixtures("postgres")
 
 STAFF = {"X-Staff-Key": "staff-test"}
 PLUGIN = {"X-Plugin-Key": "plugin-test"}
@@ -54,8 +57,7 @@ class Stub:
         return list(self.rows or [])
 
     def member(self, member_id):
-        with s.db.connect() as conn:
-            self.saw_pending = bool(conn.execute("SELECT 1 FROM patreon_webhook_members WHERE member_id=?", (member_id,)).fetchone())
+        self.saw_pending = bool(testing.value("SELECT 1 FROM patreon_webhook_members WHERE member_id = %s", (member_id,)))
         return patron(tier="ascended")
 
     def close(self):
@@ -118,6 +120,13 @@ def redirect_query(response):
     return parts, parse_qs(parts.query, keep_blank_values=True)
 
 
+def stored_text() -> str:
+    """Everything stored: the SQLite file and every Postgres table as text."""
+    tables = [r["tablename"] for r in testing.rows("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")]
+    text = "".join(testing.value(f"SELECT COALESCE(string_agg(t::text, ''), '') FROM {name} t") for name in tables)
+    return s.sqlite_db.DB_PATH.read_bytes().decode("latin-1") + text
+
+
 def assert_clean(response, caplog, *secrets):
     ours = "\n".join(record.getMessage() for record in caplog.records if record.name == "patreon")
     blob = response.headers.get("location", "") + response.text + ours
@@ -132,7 +141,7 @@ def test_link_happy_path_each_auth_mode(api, monkeypatch, caplog, mode):
     stub = Stub()
     monkeypatch.setattr(linking, "build_client", lambda config=None: stub)
     if mode == "profile":
-        with s.db.connect() as conn:
+        with s.sqlite_db.connect() as conn:
             conn.execute("INSERT INTO discord_links(player_uuid,discord_user_id,minecraft_name,linked_at) VALUES (?,?,?,?)", (player(), "222", "StoredSteve", iso(utcnow())))
     body = start(api, mode, monkeypatch, {} if mode == "profile" else None)
     parts, query = state_of(body)
@@ -142,24 +151,22 @@ def test_link_happy_path_each_auth_mode(api, monkeypatch, caplog, mode):
     assert query["scope"] == ["identity"]
     token = query["state"][0]
     assert timedelta(minutes=9) < parse(body["expires_at"]) - utcnow() <= timedelta(minutes=10, seconds=2)
-    with s.db.connect() as conn:
-        row = conn.execute("SELECT * FROM patreon_oauth_states").fetchone()
-        assert token not in "".join(str(value) for value in tuple(row))
-        assert row["state_hash"] == hashlib.sha256(token.encode()).hexdigest() and row["used_at"] is None
-        if mode == "staff":
-            assert row["discord_user_id"] == "111" and row["player_uuid"] is None
-        else:
-            assert row["player_uuid"] == player() and row["discord_user_id"] is None
+    [row] = testing.rows("SELECT * FROM patreon_oauth_states")
+    assert token not in "".join(str(value) for value in row.values())
+    assert row["state_hash"] == hashlib.sha256(token.encode()).hexdigest() and row["used_at"] is None
+    if mode == "staff":
+        assert row["discord_user_id"] == "111" and row["player_uuid"] is None
+    else:
+        assert row["player_uuid"] == player() and row["discord_user_id"] is None
     assert "secret-discord-name" not in body["authorize_url"] and "SecretSteve" not in body["authorize_url"]
     response = callback(api, token, code=SECRET_CODE)
     confirm = confirm_token(response)
     location = urlsplit(response.headers["location"])
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_links").fetchone()[0] == 0
-        pending = conn.execute("SELECT * FROM patreon_pending_links").fetchone()
-        assert pending["token_hash"] == hashlib.sha256(confirm.encode()).hexdigest()
-        assert confirm != token and confirm not in str(tuple(pending))
-        assert timedelta(minutes=9) < parse(pending["expires_at"]) - utcnow() <= timedelta(minutes=10, seconds=2)
+    assert testing.value("SELECT count(*) FROM patreon_links") == 0
+    [pending] = testing.rows("SELECT * FROM patreon_pending_links")
+    assert pending["token_hash"] == hashlib.sha256(confirm.encode()).hexdigest()
+    assert confirm != token and confirm not in str(tuple(pending.values()))
+    assert timedelta(minutes=9) < pending["expires_at"] - utcnow() <= timedelta(minutes=10, seconds=2)
     expected = {"target_kind": "discord" if mode == "staff" else "minecraft", "target_name": "secret-discord-name" if mode == "staff" else "SecretSteve" if mode == "plugin" else "StoredSteve", "patreon_name": SECRET_NAME}
     for _ in range(2):
         pending_response = api.post("/patreon/link/pending", json={"token": confirm})
@@ -173,15 +180,14 @@ def test_link_happy_path_each_auth_mode(api, monkeypatch, caplog, mode):
     assert location.scheme == "https" and location.netloc == "www.tfminecraft.net" and location.path == "/patreon/linked"
     assert stub.exchange_calls == [(SECRET_CODE, None)] and stub.identity_calls == [SECRET_TOKEN] and stub.member_calls == []
     assert stub.closed
-    with s.db.connect() as conn:
-        link = conn.execute("SELECT * FROM patreon_links").fetchone()
-        assert link["patreon_user_id"] == "1" and link["method"] == "oauth" and link["active"] == 1
-        if mode == "staff":
-            assert link["discord_user_id"] == "111" and link["player_uuid"] is None
-        else:
-            assert link["player_uuid"] == player() and link["discord_user_id"] is None
-        assert conn.execute("SELECT used_at FROM patreon_oauth_states").fetchone()[0]
-    assert SECRET_TOKEN.encode() not in s.db.DB_PATH.read_bytes()
+    [link] = testing.rows("SELECT * FROM patreon_links")
+    assert link["patreon_user_id"] == "1" and link["method"] == "oauth" and link["active"] is True
+    if mode == "staff":
+        assert link["discord_user_id"] == "111" and link["player_uuid"] is None
+    else:
+        assert link["player_uuid"] == player() and link["discord_user_id"] is None
+    assert testing.value("SELECT used_at FROM patreon_oauth_states")
+    assert SECRET_TOKEN not in stored_text()
     assert_clean(response, caplog, SECRET_CODE, SECRET_TOKEN, SECRET_REFRESH, SECRET_NAME, SECRET_EMAIL, "patron1@example.com", token)
 
 
@@ -190,8 +196,7 @@ def test_expired_and_reused_state(api, monkeypatch):
     stub = Stub()
     monkeypatch.setattr(linking, "build_client", lambda config=None: stub)
     token = state_of(start(api, "staff", monkeypatch))[1]["state"][0]
-    with s.db.connect() as conn:
-        conn.execute("UPDATE patreon_oauth_states SET expires_at=?", (iso(utcnow() - timedelta(minutes=1)),))
+    testing.execute("UPDATE patreon_oauth_states SET expires_at = %s", (utcnow() - timedelta(minutes=1),))
     expired = callback(api, token, code=SECRET_CODE)
     assert redirect_query(expired)[1]["status"] == ["expired"] and redirect_query(expired)[1]["tier"] == [""]
     assert stub.exchange_calls == []
@@ -239,7 +244,7 @@ def test_token_and_identity_failures_redirect_error(api, monkeypatch, caplog, fa
     response = callback(api, token, code=SECRET_CODE)
     assert redirect_query(response)[1] == {"status": ["error"], "tier": [""]}
     assert_clean(response, caplog, SECRET_CODE, SECRET_TOKEN, SECRET_REFRESH, SECRET_NAME)
-    assert SECRET_TOKEN.encode() not in s.db.DB_PATH.read_bytes()
+    assert SECRET_TOKEN not in stored_text()
     assert redirect_query(callback(api, token, code=SECRET_CODE))[1]["status"] == ["expired"]
     if fail == "exchange":
         assert stub.identity_calls == []
@@ -283,8 +288,7 @@ def test_webhook_good_signature_refreshes_after_recording(api, monkeypatch):
     assert SECRET_EMAIL not in response.text and SECRET_NAME not in response.text
     assert stub.saw_pending and stub.closed
     assert changes()[0]["add_tier"] == "ascended"
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_webhook_members").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_webhook_members") == 0
 
 
 @pytest.mark.parametrize("signature", ["0" * 32, "abcd", None])
@@ -298,8 +302,7 @@ def test_webhook_bad_signature(api, monkeypatch, caplog, signature):
     response = api.post("/patreon/webhook", content=raw, headers=headers)
     assert response.status_code == 401 and response.json()["detail"] == "invalid_signature"
     assert SECRET_EMAIL not in response.text and SECRET_EMAIL not in caplog.text
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_webhook_members").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_webhook_members") == 0
 
 
 def test_webhook_missing_secret(api, monkeypatch):
@@ -313,8 +316,7 @@ def test_webhook_unknown_event_is_ignored(api, monkeypatch):
     raw = b"not-json " + SECRET_EMAIL.encode()
     response = api.post("/patreon/webhook", content=raw, headers={"X-Patreon-Signature": sign(raw), "X-Patreon-Event": "campaigns:update"})
     assert response.status_code == 200 and response.json() == {"ok": True}
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_webhook_members").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_webhook_members") == 0
 
 
 def test_webhook_busy_refresh_is_retained_and_retried(api, monkeypatch):
@@ -330,12 +332,10 @@ def test_webhook_busy_refresh_is_retained_and_retried(api, monkeypatch):
     raw = b'{"data":{"type":"member","id":"m9"}}'
     response = api.post("/patreon/webhook", content=raw, headers={"X-Patreon-Signature": sign(raw), "X-Patreon-Event": "members:pledge:create"})
     assert response.status_code == 200 and calls["n"] == 1
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT member_id FROM patreon_webhook_members").fetchone()[0] == "m9"
+    assert testing.value("SELECT member_id FROM patreon_webhook_members") == "m9"
     linking.retry_pending_webhooks()
     assert calls["n"] == 2
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_webhook_members").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_webhook_members") == 0
 
 
 def test_public_callbacks_disabled(api, monkeypatch):
@@ -358,14 +358,12 @@ def test_login_csrf_requires_explicit_confirmation_and_cancel_grants_nothing(api
     # A supporter opens the attacker's consent URL and consents with their Patreon.
     token = confirm_token(callback(api, state, code=SECRET_CODE))
     assert api.post("/patreon/link/pending", json={"token": token}).json() == {"target_kind": "discord" if mode == "staff" else "minecraft", "target_name": name, "patreon_name": SECRET_NAME}
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_links").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_links") == 0
     assert changes() == []
     assert api.post("/patreon/link/cancel", json={"token": token}).json() == {"status": "ok"}
     for action in ("pending", "confirm", "cancel"):
         assert api.post("/patreon/link/" + action, json={"token": token}).json()["status"] == "expired"
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_links").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_links") == 0
     assert changes() == []
 
 
@@ -374,13 +372,11 @@ def test_expired_unknown_and_oversized_confirmation(api, monkeypatch, action):
     monkeypatch.setattr(linking, "build_client", lambda config=None: Stub())
     state = state_of(start(api, "staff", monkeypatch))[1]["state"][0]
     token = confirm_token(callback(api, state, code=SECRET_CODE))
-    with s.db.connect() as conn:
-        conn.execute("UPDATE patreon_pending_links SET expires_at=?", (iso(utcnow() - timedelta(seconds=1)),))
+    testing.execute("UPDATE patreon_pending_links SET expires_at = %s", (utcnow() - timedelta(seconds=1),))
     for invalid in (token, "unknown", "", "x" * 257):
         response = api.post("/patreon/link/" + action, json={"token": invalid})
         assert response.status_code == 200 and response.json()["status"] == "expired"
-    with s.db.connect() as conn:
-        assert conn.execute("SELECT count(*) FROM patreon_links").fetchone()[0] == 0
+    assert testing.value("SELECT count(*) FROM patreon_links") == 0
 
 
 def test_profile_name_falls_back_to_session_uuid(api, monkeypatch):
