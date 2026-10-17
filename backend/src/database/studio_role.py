@@ -68,22 +68,25 @@ def provision(url: str, role: str, password: str) -> None:
                 ))
         conn.execute(sql.SQL("REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM {}").format(ident))
         conn.execute(sql.SQL("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO {}").format(ident))
-        # Revoking this role's grants cannot remove privileges inherited from
-        # PUBLIC. Refuse an older or restored database whose defaults bypass
-        # these restrictions, without changing everyone else's permissions.
+        # Table privilege checks miss PUBLIC column grants. Check effective
+        # access without changing other logins' permissions.
         unsafe = conn.execute(
-            "SELECT has_schema_privilege(%s, 'public', 'CREATE') "
-            "OR has_database_privilege(%s, current_database(), 'CREATE') "
+            "SELECT has_database_privilege(%s, current_database(), 'CREATE') "
+            "OR EXISTS (SELECT 1 FROM pg_namespace n "
+            "WHERE n.nspname !~ '^pg_(toast_)?temp_[0-9]+$' AND has_schema_privilege(%s, n.oid, 'CREATE')) "
             "OR EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
-            "WHERE n.nspname = 'public' AND CASE WHEN c.relkind = 'S' "
+            "WHERE n.nspname !~ '^pg_(toast_)?temp_[0-9]+$' AND CASE WHEN c.relkind = 'S' "
             "THEN has_sequence_privilege(%s, c.oid, 'UPDATE') ELSE false END) "
-            "OR EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' "
-            "AND tablename = ANY(%s) AND has_table_privilege(%s, "
-            "format('public.%%I', tablename), 'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'))",
-            (role, role, role, sorted(READ_ONLY_TABLES), role),
+            "OR EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'f') AND ("
+            "has_table_privilege(%s, c.oid, 'TRUNCATE, REFERENCES, TRIGGER') "
+            "OR has_any_column_privilege(%s, c.oid, 'REFERENCES') "
+            "OR (c.relname = ANY(%s) AND (has_table_privilege(%s, c.oid, 'INSERT, UPDATE, DELETE') "
+            "OR has_any_column_privilege(%s, c.oid, 'INSERT, UPDATE')))))",
+            (role, role, role, role, role, sorted(READ_ONLY_TABLES), role, role),
         ).fetchone()[0]
         if unsafe:
-            raise StudioRoleError("PUBLIC grants bypass the studio restrictions; review the database grants first")
+            raise StudioRoleError("Effective grants bypass the studio restrictions; review the database grants first")
 
 
 def main(argv: list[str] | None = None) -> int:

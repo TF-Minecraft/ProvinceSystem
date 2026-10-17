@@ -372,10 +372,55 @@ def test_provisioning_refuses_public_grants_that_bypass_restrictions(postgres, s
     with psycopg.connect(postgres, autocommit=True) as conn:
         conn.execute("GRANT INSERT ON admin_audit TO PUBLIC")
         try:
-            with pytest.raises(StudioRoleError, match="PUBLIC grants"):
+            with pytest.raises(StudioRoleError, match="grants.*bypass"):
                 provision(postgres, f"studio_test_{os.getpid()}", "studio-test-password")
         finally:
             conn.execute("REVOKE INSERT ON admin_audit FROM PUBLIC")
+
+
+def test_provisioning_refuses_create_on_other_persistent_schemas(postgres, studio_login):
+    with psycopg.connect(postgres, autocommit=True) as conn:
+        conn.execute("CREATE SCHEMA studio_other")
+        try:
+            conn.execute("GRANT USAGE, CREATE ON SCHEMA studio_other TO PUBLIC")
+            with pytest.raises(StudioRoleError, match="grants.*bypass"):
+                provision(postgres, f"studio_test_{os.getpid()}", "studio-test-password")
+        finally:
+            conn.execute("DROP SCHEMA studio_other CASCADE")
+
+
+@pytest.mark.parametrize("privilege", ["TRUNCATE", "TRIGGER", "REFERENCES", "REFERENCES (player_uuid)"])
+def test_provisioning_refuses_definition_privileges_on_ordinary_tables(postgres, studio_login, privilege):
+    with psycopg.connect(postgres, autocommit=True) as conn:
+        conn.execute(f"GRANT {privilege} ON codes TO PUBLIC")
+        try:
+            with pytest.raises(StudioRoleError, match="grants.*bypass"):
+                provision(postgres, f"studio_test_{os.getpid()}", "studio-test-password")
+        finally:
+            conn.execute(f"REVOKE {privilege} ON codes FROM PUBLIC")
+
+
+@pytest.mark.parametrize("grantee", ["PUBLIC", "studio"])
+@pytest.mark.parametrize(("table", "privilege"), [
+    ("admin_audit", "INSERT (created_at, actor_type, action, outcome)"),
+    ("schema_migrations", "UPDATE (checksum)"),
+])
+def test_provisioning_repairs_direct_and_refuses_public_column_grants(postgres, studio_login, grantee, table, privilege):
+    role = f"studio_test_{os.getpid()}"
+    target = sql.Identifier(role) if grantee == "studio" else sql.SQL("PUBLIC")
+    with psycopg.connect(postgres, autocommit=True) as conn:
+        conn.execute(sql.SQL("GRANT {} ON {} TO {}").format(sql.SQL(privilege), sql.Identifier(table), target))
+        try:
+            if grantee == "PUBLIC":
+                with pytest.raises(StudioRoleError, match="grants.*bypass"):
+                    provision(postgres, role, "studio-test-password")
+            else:
+                provision(postgres, role, "studio-test-password")
+                assert conn.execute(
+                    "SELECT has_any_column_privilege(%s, %s, 'INSERT, UPDATE')", (role, table),
+                ).fetchone() == (False,)
+        finally:
+            conn.execute(sql.SQL("REVOKE {} ON {} FROM {}").format(sql.SQL(privilege), sql.Identifier(table), target))
 
 
 def test_studio_inserts_can_allocate_an_identity_without_resetting_it(app, env):
