@@ -28,8 +28,8 @@ API builds **display-slug only**: `slugify(display_name)` (e.g. item name `Blue 
 
 ### Skin id rules
 
-- Regex: `^[a-z][a-z0-9_]{1,47}$` (2-48 chars total).
-- Must start with a letter; only `a-z`, `0-9`, `_`; no spaces, hyphens, capitals, dots, unicode, or leading/trailing `_`; no double underscores `__`.
+- Base regex: `^[a-z][a-z0-9_]{1,47}$` (2-48 chars total). `assert_slug` separately rejects double underscores `__` and the reserved ids below.
+- Must start with a letter; only `a-z`, `0-9`, `_`; no spaces, hyphens, capitals, dots, unicode, or leading `_`. A trailing `_` passes validation, though generated ids trim it.
 - Must be unique among `pending` / `approved` / `applied` (`denied` / `revoked` may reuse).
 - Same player cannot submit another **active** skin with the same **display_name** slug (case-insensitive).
 - Reserved ids: `test`, `texture`, `null`, `undefined`, `admin`, `tfmc`, `new` (Profile's editor is `?tab=skins&skin=new`).

@@ -42,7 +42,7 @@ sequenceDiagram
   participant TW as TFMCWeb
   participant AS as ArmourShop
   participant API as TFMCWeb
-  participant IA as tfmc_submissions
+  participant IA as ItemsAdder
   participant LP as LuckPerms
 
   TW->>API: mint code after link
@@ -51,8 +51,10 @@ sequenceDiagram
   AS->>IA: write configs and textures
   AS->>AS: write category set YAML
   AS->>LP: grant armourshop.submission.slug
-  AS->>API: POST applied
   AS->>AS: queue IA reload when safe
+  AS->>IA: iareload, then delayed iazip
+  IA-->>AS: ItemsAdderPackCompressedEvent
+  AS->>API: POST /skins/plugin/applied
 ```
 
 ## ItemsAdder: `tfmc_submissions`
@@ -117,7 +119,7 @@ On apply: grant issuer UUID `armourshop.submission.{id}` - one shared node for t
 
 1. Write files immediately.
 2. If players online → mark pending reload.
-3. When `onlineCount == 0` or on restart → console **`iazip`**.
+3. When `onlineCount == 0` or on restart → console **`iareload`**, then **`iazip`** after the configured delay.
 4. On `ItemsAdderPackCompressedEvent` → `POST /skins/plugin/applied`.
 
 Delete uses the same deferred queue - never immediate reload even with staff online.

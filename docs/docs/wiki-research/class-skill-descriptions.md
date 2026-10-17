@@ -20,7 +20,7 @@ Thirty-nine IDs have exact, case-insensitive root matches in the active MythicMo
 | `FREEZING_SHOT` | Freezing Shot | Empowers your next shot to immobilize the target. |
 | `ARCHER_CLOAK` | Archer Cloak | Makes you invisible and faster until you attack, take damage, interact, or alter a block. |
 
-Evidence: `C:\Users\MSI\Desktop\plugins\MythicMobs\skills\TFMC\Classes\tfmc_class_skills.yml:460-636`; decoy copy behavior in `C:\Users\MSI\Desktop\plugins\MythicMobs\mobs\TFMC\Classes\tfmc_skills_mobs.yml:1-24`.
+Evidence: MythicMobs `skills/TFMC/Classes/tfmc_class_skills.yml:460-636`; decoy copy behavior in MythicMobs `mobs/TFMC/Classes/tfmc_skills_mobs.yml:1-24`.
 
 ### Bard
 
