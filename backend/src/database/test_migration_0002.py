@@ -25,13 +25,13 @@ def test_0002_keeps_account_data_and_clears_spent_plaintext(scratch_database, mo
                      "('b', NULL, NULL, false, 0, NULL, NULL, NULL, now())")
         conn.execute("INSERT INTO rpc_player_meta (player_uuid, realm_id, skin_kinds_json, permission_flags_json, updated_at) "
                      "VALUES ('a', 'main', '[\"book\"]', '{\"tfmc.map.staff\": true}', now())")
-        for code_id, extra in enumerate(["open", "revoked", "expired", "redeemed", "used", "drunk"], start=1):
+        for code_id, extra in enumerate(["open", "revoked", "expired", "redeemed", "used", "drunk", "held"], start=1):
             conn.execute(
                 "INSERT INTO codes (id, code_hash, code_plaintext, player_uuid, scope, created_at, expires_at, "
                 "redeemed_at, revoked) VALUES (%s, %s, %s, 'a', %s, now(), now() + %s::interval, %s, %s)",
                 (code_id, extra, extra, "profile" if extra == "redeemed" else "drink" if extra == "drunk" else "skin",
                  "-1 hour" if extra == "expired" else "1 hour",
-                 datetime.now(timezone.utc) if extra == "redeemed" else None, extra == "revoked"))
+                 datetime.now(timezone.utc) if extra in ("redeemed", "held") else None, extra == "revoked"))
         conn.execute("INSERT INTO submissions (id, player_uuid, code_id, kind, slug, display_name, status, dir_path, "
                      "created_at) VALUES ('s', 'a', 5, 'book', 'b', 'B', 'pending', 'd', now())")
         conn.execute("INSERT INTO drink_submissions (id, player_uuid, code_id, slug, display_name, recipe_json, status, "
@@ -40,11 +40,12 @@ def test_0002_keeps_account_data_and_clears_spent_plaintext(scratch_database, mo
     with psycopg.connect(url, row_factory=dict_row) as conn:
         accounts = conn.execute("SELECT * FROM character_account_meta ORDER BY player_uuid").fetchall()
         entitlements = conn.execute("SELECT skin_kinds, permission_flags FROM web_entitlements").fetchone()
-        kept = [r["code_plaintext"] for r in conn.execute("SELECT code_plaintext FROM codes WHERE code_plaintext IS NOT NULL")]
+        kept = sorted(r["code_plaintext"] for r in conn.execute("SELECT code_plaintext FROM codes WHERE code_plaintext IS NOT NULL"))
     assert set(accounts[0]) == {"player_uuid", "is_adult", "real_age_set", "account_created_at",
                                 "kit_cooldown_seconds_remaining", "kit_cooldown_hours", "kit_cooldowns", "updated_at"}
     assert (accounts[0]["is_adult"], accounts[0]["kit_cooldowns"]) == (True, {"k": 1})
     assert accounts[0]["account_created_at"] == datetime.fromtimestamp(1789844555, timezone.utc)
     assert accounts[1]["account_created_at"] is None
     assert entitlements == {"skin_kinds": ["book"], "permission_flags": {"tfmc.map.staff": True}}
-    assert kept == ["open"]
+    # A skin code marked redeemed without a submission is still open to a new upload.
+    assert kept == ["held", "open"]

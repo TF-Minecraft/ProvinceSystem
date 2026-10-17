@@ -25,6 +25,17 @@ database() {
 }
 record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$state/site-deploy.log"; }
 native_commit() { git cat-file -e "$1:backend/src/database/operations.py" 2>/dev/null; }
+# Migrations only go forward: a revision without a migration the database
+# already has would run against a schema it does not know. Checked here, not
+# in the revision's own code, because older revisions predate the check.
+schema_fits() {
+  local applied known missing
+  compose up -d --wait db >&2 || return 1
+  applied=$(compose exec -T db psql -U provincesystem -d provincesystem -Atc 'SELECT version FROM schema_migrations') || return 1
+  known=$(git ls-tree --name-only "$1" backend/src/database/migrations/ | sed -n 's#.*/\([0-9]\{4\}\)_[a-z0-9_]*\.sql$#\1#p') || return 1
+  missing=$(comm -23 <(sort <<< "$applied") <(sort <<< "$known") | tr '\n' ' ')
+  [[ -z $missing ]] || { log "${1:0:7} predates database migration ${missing% }; fix forward"; return 1; }
+}
 checkout() {
   # Docker COPY makes these files root-owned. The runtime uid still needs to
   # read source files and traverse directories; keep the private backup umask
@@ -131,6 +142,7 @@ if [[ $site == dev && $sha != "$old" ]] && git merge-base --is-ancestor "$sha" "
   echo 'a newer revision is already deployed'; exit 0
 fi
 if [[ $site == www ]] && ! git diff --quiet HEAD --; then log "$site has uncommitted changes; nothing changed"; exit 1; fi
+schema_fits "$sha" || exit 4
 changed=$(git diff --name-only "$old" "$sha")
 summary='backend,frontend'
 
@@ -162,6 +174,7 @@ fi
 
 log "$site failed; restoring ${old:0:7}"
 compose stop backend >&2 || { record 'failed: cannot stop backend'; exit 5; }
+if ! schema_fits "$old"; then record 'failed: database is newer than the last healthy revision; backend kept stopped'; exit 5; fi
 if ! checkout "$old"; then record 'failed: rollback checkout; backend kept stopped'; exit 5; fi
 if ! select_images "$old" || ! compose build backend frontend >&2; then
   record 'failed: rollback build; backend kept stopped'; exit 5

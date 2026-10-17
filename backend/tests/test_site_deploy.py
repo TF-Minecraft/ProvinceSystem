@@ -60,6 +60,9 @@ if tool=='git':
  elif args[:2]==['diff','--name-only']: print('backend/server.py' if args[-2]!=args[-1] else '')
  elif args[:2]==['diff','--quiet']: sys.exit(1 if os.environ.get('DIRTY_INPUT') else 0)
  elif args[:2]==['merge-base','--is-ancestor']: sys.exit(0 if args[-1]=='origin/main' or args[-2]<=args[-1] else 1)
+ elif args[0]=='ls-tree':
+  rev=args[-2]; versions=os.environ.get('MIGRATIONS_'+('OLD' if rev==old else 'NEW'),'0001')
+  print('\\n'.join(f'backend/src/database/migrations/{v}_m.sql' for v in versions.split(',')))
  elif args[0]=='cat-file': sys.exit(0 if args[-1].split(':')[0] in os.environ.get('NATIVE_REVISIONS',old+','+new).split(',') else 1)
  sys.exit(0)
 if tool=='docker':
@@ -95,7 +98,9 @@ if tool=='ps-compose':
   containers_file.write_text(json.dumps(containers))
  if args[:2]==['ps','-q'] and args[-1] in containers:
   if os.environ.get('MISSING_CONTAINER')!=args[-1] or head!=new: print(f'{site}-{args[-1]}')
- if args[0]=='exec': print('private-postgres-dump')
+ if args[0]=='exec':
+  state=root/'db-versions'
+  print('\\n'.join((state.read_text() if state.exists() else os.environ.get('DB_VERSIONS','0001')).split(',')) if 'psql' in args else 'private-postgres-dump')
  if args[0]=='run':
   tag=overlay()['backend']['image']
   assert tag==image_tag('backend') and tag in images, (tag,head)
@@ -104,7 +109,8 @@ if tool=='ps-compose':
   command=args[-1]
   assert command in ('prepare','studio') and marker.exists()
   if command=='studio' and os.environ.get('FAIL_STUDIO') and head==new: sys.exit(1)
-  if command=='prepare' and os.environ.get('DATABASE_NEWER') and head==old: sys.exit(1)
+  if command=='prepare' and head==new and os.environ.get('MIGRATES_TO'):
+   (root/'db-versions').write_text(os.environ['MIGRATES_TO'])
  sys.exit(0)
 raise SystemExit('unexpected host command')
 """
@@ -189,12 +195,26 @@ def test_failed_migration_step_returns_to_the_last_healthy_revision(host):
     assert "rolled back" in (root / "site-deploy.log").read_text()
 
 
-def test_rollback_stops_when_the_database_is_newer_than_the_old_revision(host):
+def test_rollback_stops_when_the_failed_deploy_migrated_past_the_old_revision(host):
     root, data, run = host
-    result, trace = run(FAIL_HEALTH="1", DATABASE_NEWER="1")
+    result, trace = run(FAIL_HEALTH="1", MIGRATIONS_NEW="0001,0002", MIGRATES_TO="0001,0002")
     assert result.returncode == 5
-    assert not any(head == OLD and args[:2] == ["up", "-d"] for head, args in commands(trace))
-    assert "failed: rollback database; backend kept stopped" in (root / "site-deploy.log").read_text()
+    assert "predates database migration 0002" in result.stderr
+    assert not any(head == OLD and args[:2] == ["up", "-d"] and "backend" in args for head, args in commands(trace))
+    assert operations(root) == [(NEW, "prepare"), (NEW, "studio")]
+    assert "database is newer than the last healthy revision" in (root / "site-deploy.log").read_text()
+
+
+def test_revision_older_than_the_database_is_refused_before_anything_changes(host):
+    root, data, run = host
+    (root / "head").write_text(NEW)
+    (root / ".site-deployed-www").write_text(NEW)
+    set_running(root, NEW)
+    result, trace = run(target=OLD, DB_VERSIONS="0001,0002", MIGRATIONS_NEW="0001,0002")
+    assert result.returncode == 4
+    assert "predates database migration 0002; fix forward" in result.stderr
+    assert not any(args[0] in ("build", "stop") for _, args in commands(trace))
+    assert (root / "head").read_text() == NEW
 
 
 def test_interrupted_checkout_resumes_instead_of_claiming_success(host):
