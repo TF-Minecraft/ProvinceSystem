@@ -176,18 +176,26 @@ def remember_discord_nicknames(updates: list[dict]) -> dict:
         raise LinkError("updates must be a list")
     if len(updates) > _USERNAME_UPDATES_MAX:
         raise LinkError("too many nickname updates")
+    pending = []
+    for item in updates:
+        if not isinstance(item, dict):
+            continue
+        discord_id = str(item.get("discord_user_id") or "").strip()
+        if not discord_id:
+            continue
+        raw = item.get("discord_nickname")
+        nickname = _sanitize_discord_nickname(raw)
+        if nickname is None and str(raw or "").strip():
+            continue
+        pending.append((nickname, discord_id))
     updated = 0
     with database.connect() as conn:
-        for item in updates:
-            if not isinstance(item, dict):
-                continue
-            discord_id = str(item.get("discord_user_id") or "").strip()
-            if not discord_id:
-                continue
-            raw = item.get("discord_nickname")
-            nickname = _sanitize_discord_nickname(raw)
-            if nickname is None and str(raw or "").strip():
-                continue
+        if pending:
+            conn.execute(
+                "SELECT discord_user_id FROM discord_links WHERE discord_user_id = ANY(%s) "
+                "ORDER BY discord_user_id FOR UPDATE", ([did for _, did in pending],),
+            ).fetchall()
+        for nickname, discord_id in pending:
             cur = conn.execute(
                 "UPDATE discord_links SET discord_nickname = %s WHERE discord_user_id = %s",
                 (nickname, discord_id),
@@ -217,15 +225,23 @@ def remember_discord_usernames(
     if len(updates) > _USERNAME_UPDATES_MAX:
         raise LinkError("too many username updates")
 
+    pending = []
+    for item in updates:
+        if not isinstance(item, dict):
+            continue
+        discord_id = str(item.get("discord_user_id") or "").strip()
+        name = _sanitize_discord_username(item.get("discord_username"))
+        if not discord_id or name is None:
+            continue
+        pending.append((name, discord_id))
     updated = 0
     with database.connect() as conn:
-        for item in updates:
-            if not isinstance(item, dict):
-                continue
-            discord_id = str(item.get("discord_user_id") or "").strip()
-            name = _sanitize_discord_username(item.get("discord_username"))
-            if not discord_id or name is None:
-                continue
+        if pending:
+            conn.execute(
+                "SELECT discord_user_id FROM discord_links WHERE discord_user_id = ANY(%s) "
+                "ORDER BY discord_user_id FOR UPDATE", ([did for _, did in pending],),
+            ).fetchall()
+        for name, discord_id in pending:
             if overwrite:
                 sql = """
                     UPDATE discord_links

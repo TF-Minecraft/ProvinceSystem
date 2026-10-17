@@ -154,11 +154,15 @@ def _row_json_object(row: dict, key: str) -> dict[str, str]:
     data = row.get(key)
     if not isinstance(data, dict):
         return {}
-    return {
+    values = {
         str(k): str(v)
         for k, v in data.items()
         if v is not None and str(v).strip()
     }
+    # Aliases, scrolls and base sets are produced in the retained tier-array order.
+    ordered = {tier: values[tier] for tier in _row_json_list(row, "tiers") if tier in values}
+    ordered.update(values)
+    return ordered
 
 
 def _row_add_name(row: dict) -> bool:
@@ -1415,7 +1419,14 @@ def revoke_submission(submission_id: str) -> dict:
 def mark_applied(submission_ids: list[str]) -> list[str]:
     applied: list[str] = []
     now = _utcnow()
+    targets = [(sid or "").strip() for sid in submission_ids if (sid or "").strip()]
     with database.connect() as conn:
+        # Lock the whole batch in one order before the caller-ordered updates.
+        if targets:
+            conn.execute(
+                "SELECT id FROM submissions WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                (targets,),
+            ).fetchall()
         for sid in submission_ids:
             sid = (sid or "").strip()
             if not sid:

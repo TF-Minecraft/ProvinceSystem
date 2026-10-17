@@ -597,6 +597,16 @@ def _public_row(row) -> dict[str, Any]:
     recipe = row.get("recipe_json")
     if not isinstance(recipe, dict):
         recipe = {}
+    # JSONB loses object order; _validate_recipe writes these fields in this order.
+    keys = (
+        "name", "names", "name_colours", "name_bad_colours", "name_good_colours", "ingredients",
+        "cooking_time", "distill_runs", "distill_time", "wood", "barrel_type", "age", "difficulty",
+        "alcohol", "effects", "color", "lore", "drink_message", "drink_title", "drink_message_colours",
+        "drink_title_colours", "glint",
+    )
+    ordered = {key: recipe[key] for key in keys if key in recipe}
+    ordered.update(recipe)
+    recipe = ordered
     return {
         "id": row["id"],
         "player_uuid": row["player_uuid"],
@@ -1313,7 +1323,14 @@ def mark_drinks_applied(submission_ids: list[str]) -> list[str]:
     applied: list[str] = []
     pending_notifications: list[tuple[str, str, dict[str, Any]]] = []
     now = _utcnow()
+    targets = [(sid or "").strip() for sid in submission_ids if (sid or "").strip()]
     with database.connect() as conn:
+        # Lock the whole batch in one order before the caller-ordered updates.
+        if targets:
+            conn.execute(
+                "SELECT id FROM drink_submissions WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                (targets,),
+            ).fetchall()
         for sid in submission_ids:
             sid = (sid or "").strip()
             if not sid:

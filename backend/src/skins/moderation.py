@@ -258,6 +258,8 @@ def ack_moderation(ids: list[int]) -> dict:
 
     now = _utcnow()
     with database.connect() as conn:
+        conn.execute("SELECT id FROM moderation_notifications WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                     (raw_ids,)).fetchall()
         # Already delivered notices are acked again without moving their time.
         conn.execute(
             "UPDATE moderation_notifications SET delivered_at = %s WHERE id = ANY(%s) AND delivered_at IS NULL",

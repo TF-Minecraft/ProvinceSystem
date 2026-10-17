@@ -117,6 +117,8 @@ def ack_plugin_notices(ids: list[int]) -> dict:
 
     now = _utcnow()
     with database.connect() as conn:
+        conn.execute("SELECT id FROM plugin_notices WHERE id = ANY(%s) ORDER BY id FOR UPDATE",
+                     (raw_ids,)).fetchall()
         # Already delivered notices are acked again without moving their time.
         conn.execute(
             "UPDATE plugin_notices SET delivered_at = %s WHERE id = ANY(%s) AND delivered_at IS NULL",
