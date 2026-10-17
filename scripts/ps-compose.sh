@@ -5,7 +5,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: ps-compose <main|dev> <ps|logs|start|stop|restart|up|build|pull|exec|top> [args...]" >&2
+  echo "usage: ps-compose <main|dev> <ps|logs|start|stop|restart|up|build|pull|exec|run|top> [args...]" >&2
   exit 1
 }
 
@@ -30,7 +30,7 @@ case "$target" in
 esac
 
 case "$cmd" in
-  ps|logs|start|stop|restart|up|build|pull|exec|top) ;;
+  ps|logs|start|stop|restart|up|build|pull|exec|run|top) ;;
   *)
     echo "subcommand not allowed: $cmd" >&2
     usage

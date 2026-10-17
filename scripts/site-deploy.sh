@@ -1,154 +1,189 @@
 #!/bin/bash
-# Deploy a commit on main to www.tfminecraft.net or dev.tfminecraft.net.
-#
-# Installed on the TF server as root's /usr/local/sbin/site-deploy and run as
-# tfmc, which owns both checkouts. The Deploy workflow's key logs in as
-# psdeploy, pinned to site-deploy-ssh, which runs this through sudo:
-#   restrict,command="/usr/local/sbin/site-deploy-ssh" ssh-ed25519 ... github-site-deploy
-# By hand: sudo -u tfmc site-deploy deploy <www|dev> <sha>
-#
-# Exit codes: 0 deployed or already deployed, 2 bad request, 4 commit not on
-# main, 5 site did not come up and the previous code was put back, 1 other.
+# Installed root-owned; run as tfmc through site-deploy-ssh. www is manual only.
+# Database transitions run from the reviewed target image with its backend stopped.
 set -euo pipefail
 
-usage() {
-  echo "usage: deploy <www|dev> <sha>" >&2
-  exit 2
-}
-
+usage() { echo 'usage: deploy <www|dev> <sha>' >&2; exit 2; }
 [[ $# -eq 3 && $1 == deploy ]] || usage
-site=$2
-sha=$3
+site=$2 sha=$3
 [[ $sha =~ ^[0-9a-f]{40}$ ]] || usage
-
 case "$site" in
-  www) target=main repo=/home/tfmc/ProvinceSystem data=/home/tfmc/provincesystem-data front=3000 back=8000 file=docker-compose.yml ;;
-  dev) target=dev repo=/home/tfmc/tfmc-staging data=/home/tfmc/provincesystem-dev-data front=13001 back=18001 file=docker-compose.staging.yml ;;
+  www) target=main repo=/home/tfmc/ProvinceSystem data=/home/tfmc/provincesystem-data front=3000 back=8000 ;;
+  dev) target=dev repo=/home/tfmc/tfmc-staging data=/home/tfmc/provincesystem-dev-data front=13001 back=18001 ;;
   *) usage ;;
 esac
-[[ $(id -un) == tfmc ]] || { echo "run as tfmc: sudo -u tfmc $0 deploy $site $sha" >&2; exit 2; }
-umask 022
-export HOME=/home/tfmc
-state=$HOME
-
+[[ $(id -un) == tfmc ]] || { echo 'run as tfmc' >&2; exit 2; }
+umask 077
+state=/home/tfmc
 exec 9> "$state/.site-deploy-$site.lock"
 flock 9
-
 log() { echo "$*" >&2; }
 compose() { /usr/local/sbin/ps-compose "$target" "$@"; }
-# The site's Postgres, when the checked-out compose file has one.
-has_db() { grep -q '^  db:$' "$repo/$file"; }
-start_db() { ! has_db || compose up -d --wait db >&2; }
-record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$state/site-deploy.log"; }
-
-cd "$repo"
-git fetch -q origin
-if ! git merge-base --is-ancestor "$sha" origin/main 2>/dev/null; then
-  log "${sha:0:7} is not on main"
-  exit 4
-fi
-old=$(git rev-parse HEAD)
-# dev deploys run on every merge, so an older commit means a newer one already landed.
-if [[ $old == "$sha" ]] || { [[ $site == dev ]] && git merge-base --is-ancestor "$sha" "$old"; }; then
-  echo "already deployed"
-  exit 0
-fi
-if [[ $site == www ]] && ! git diff --quiet HEAD --; then
-  log "the www checkout has uncommitted changes; nothing was changed"
-  exit 1
-fi
-
-# The backend image also bundles frontend/lib/skins for its renderer.
-changed=$(git diff --name-only "$old" "$sha")
-services=()
-grep -qE '^(frontend|shared)/|^docker-compose' <<< "$changed" && services+=(frontend)
-grep -qE '^(backend|shared|frontend/lib/skins)/|^docker-compose' <<< "$changed" && services+=(backend)
-
-# SQLite's backup API inside the container keeps the copy consistent while the
-# site writes.
-log "backing up province.db"
-compose exec -T backend python3 - <<'PYTHON'
-import sqlite3
-source = sqlite3.connect("file:/app/src/data/province.db?mode=ro", uri=True)
-target = sqlite3.connect("/app/src/data/.deploy-backup.db")
-source.backup(target)
-target.close()
-source.close()
-PYTHON
-mkdir -p "$data/deploy-backups"
-mv "$data/data/.deploy-backup.db" "$data/deploy-backups/province.db.before-deploy-${sha:0:7}-$(date -u +%Y%m%dT%H%M%SZ)"
-find "$data/deploy-backups" -maxdepth 1 -name 'province.db.before-deploy-*' -printf '%T@ %p\n' \
-  | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
-
-if has_db; then
-  log "backing up the site's Postgres"
-  start_db
-  backup="$data/deploy-backups/postgres.before-deploy-${sha:0:7}-$(date -u +%Y%m%dT%H%M%SZ).dump"
-  if ! compose exec -T db pg_dump -U provincesystem -d provincesystem --format=custom > "$backup.part"; then
-    rm -f "$backup.part"
-    log "could not back up the site's Postgres; nothing was changed"
-    exit 1
-  fi
-  mv "$backup.part" "$backup"
-  find "$data/deploy-backups" -maxdepth 1 -name 'postgres.before-deploy-*' -printf '%T@ %p\n' \
-    | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
-fi
-
-checkout() {
-  if [[ $site == www ]]; then
-    git reset -q --hard "$1" || return 1
-  else
-    # Keeps dev's local edits; refuses if they would be overwritten.
-    git checkout -q --detach "$1" || return 1
-  fi
+database() {
+  compose run --rm -T --no-deps --user "$(id -u):$(id -g)" backend \
+    python3 -m src.database.operations "$@" >&2
 }
-
+record() { printf '%s %s %s -> %s %s\n' "$(date -u +%FT%TZ)" "$site" "${old:0:7}" "${sha:0:7}" "$*" >> "$state/site-deploy.log"; }
+native_commit() { git cat-file -e "$1:backend/src/database/operations.py" 2>/dev/null; }
+checkout() {
+  if [[ $site == www ]]; then git reset -q --hard "$1"; else git checkout -q --detach "$1"; fi
+}
 healthy() {
   local deadline=$((SECONDS + 180))
   while ((SECONDS < deadline)); do
     if curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:$front/" \
-      && curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:$back/maps/accessible"; then
-      return 0
-    fi
+      && curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:$back/maps/accessible"; then return 0; fi
     sleep 5
   done
   return 1
 }
-
-rebuild() {
-  start_db || return 1
-  ((${#services[@]} == 0)) || compose up -d --build --no-deps "${services[@]}" >&2
+backup() {
+  local stamp backup
+  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+  mkdir -p "$data/deploy-backups" || return 1
+  chmod 700 "$data/deploy-backups" || return 1
+  compose up -d --wait db >&2 || return 1
+  backup="$data/deploy-backups/postgres.before-deploy-${sha:0:7}-$stamp.dump"
+  log "backing up $site Postgres"
+  if ! compose exec -T db pg_dump -U provincesystem -d provincesystem --format=custom > "$backup.part"; then
+    rm -f "$backup.part"; return 1
+  fi
+  mv "$backup.part" "$backup" || return 1
+  if [[ ! -f "$data/data/.postgres-authority.json" ]]; then
+    # Also retain a consistent SQLite backup before a legacy deployment/cutover.
+    python3 - "$data/data/province.db" "$data/deploy-backups/province.db.before-deploy-${sha:0:7}-$stamp" <<'PYTHON' || return 1
+import sqlite3, sys
+from pathlib import Path
+source, target = map(Path, sys.argv[1:])
+with sqlite3.connect(f'{source.resolve().as_uri()}?mode=ro', uri=True) as src:
+    with sqlite3.connect(target) as dst:
+        src.backup(dst)
+PYTHON
+  fi
+  # SQLite cutover snapshots and legacy archives have independent retention:
+  # keep through the rollback window (at least 30 days), never newest-ten prune.
+  find "$data/deploy-backups" -maxdepth 1 -name 'postgres.before-deploy-*.dump' -printf '%T@ %p\n' \
+    | sort -rn | tail -n +11 | cut -d' ' -f2- | xargs -r rm -f
 }
 
-if ! checkout "$sha"; then
-  log "could not move the checkout to ${sha:0:7}; nothing was rebuilt"
-  record "failed: checkout"
-  exit 1
+cd "$repo"
+git fetch -q origin
+if ! git merge-base --is-ancestor "$sha" origin/main 2>/dev/null; then
+  log "${sha:0:7} is not on main"; exit 4
 fi
-summary="no rebuild"
+save_deployed() {
+  python3 - "$deployed_file" "$1" <<'PYTHON'
+import os, pathlib, sys
+path = pathlib.Path(sys.argv[1]); temporary = path.with_suffix('.part')
+with temporary.open('w') as handle:
+    handle.write(sys.argv[2] + '\n'); handle.flush(); os.fsync(handle.fileno())
+os.replace(temporary, path)
+fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+try: os.fsync(fd)
+finally: os.close(fd)
+PYTHON
+}
+authority_matches() {
+  if native_commit "$sha"; then
+    [[ -f "$data/data/.postgres-authority.json" ]]
+  else
+    [[ ! -f "$data/data/.postgres-authority.json" ]]
+  fi
+}
+
+checkedout=$(git rev-parse HEAD)
+# Git moves before the copy/start sequence. Keep the last healthy revision
+# separately so an interrupted deployment can resume and still roll back safely.
+deployed_file="$state/.site-deployed-$site"
+if [[ -f "$deployed_file" ]]; then
+  old=$(cat "$deployed_file")
+  [[ $old =~ ^[0-9a-f]{40}$ ]] || { log 'invalid last-deployed record'; exit 1; }
+  git merge-base --is-ancestor "$old" origin/main || { log 'last-deployed revision is not on main'; exit 1; }
+else
+  old=$checkedout
+  save_deployed "$old"
+fi
+if [[ $old == "$sha" && $checkedout == "$sha" ]] && authority_matches && healthy; then
+  echo 'already deployed'; exit 0
+fi
+if [[ $site == dev && $sha != "$old" ]] && git merge-base --is-ancestor "$sha" "$old"; then
+  echo 'a newer revision is already deployed'; exit 0
+fi
+if [[ $site == www ]] && ! git diff --quiet HEAD --; then log "$site has uncommitted changes; nothing changed"; exit 1; fi
+was_native=false
+if native_commit "$old"; then was_native=true; fi
+current_native=false
+[[ ! -f "$data/data/.postgres-authority.json" ]] || current_native=true
+target_native=false
+if native_commit "$sha"; then target_native=true; fi
+changed=$(git diff --name-only "$old" "$sha")
+services=()
+grep -qE '^(frontend|shared)/|^docker-compose' <<< "$changed" && services+=(frontend)
+grep -qE '^(backend|shared|frontend/lib/skins)/|^docker-compose' <<< "$changed" && services+=(backend)
+summary='no rebuild'
 ((${#services[@]} == 0)) || summary=$(IFS=,; echo "${services[*]}")
-summary=${summary//,/, }
+stopped=false
+export_failed=false
+
+deploy_target() {
+  if $current_native && ! $target_native; then
+    # Ensure the current native tooling is available, even after an interrupted
+    # build. Never check out or start legacy code until its export succeeds.
+    native_commit "$checkedout" || return 1
+    compose build backend >&2 || return 1
+    compose stop backend >&2 || return 1
+    stopped=true
+    backup || return 1
+    if ! database rollback; then export_failed=true; return 1; fi
+  fi
+  checkout "$sha" || return 1
+  # Build before taking the site offline for the forward transition.
+  if ((${#services[@]})); then compose build "${services[@]}" >&2 || return 1; fi
+  if ! $stopped; then
+    compose stop backend >&2 || return 1
+    stopped=true
+    backup || return 1
+  fi
+  if $target_native; then
+    database prepare || return 1
+    database studio || return 1
+  fi
+  compose up -d --no-build --no-deps backend "${services[@]}" >&2 || return 1
+  healthy
+}
+
 log "deploying ${sha:0:7} to $site ($summary)"
-if rebuild && healthy; then
+if deploy_target; then
+  save_deployed "$sha"
   record "deployed ($summary)"
-  # The patch note jobs run a root-owned copy of this package against www's API.
   if [[ $site == www ]] && grep -q '^backend/src/patchnotes/' <<< "$changed"; then
     if ! sudo -n /usr/local/sbin/tfmc-patchnotes-update "$sha" >&2; then
-      log "patch note jobs were not updated; run: sudo tfmc-patchnotes-update $sha"
-      record "patch note update failed"
+      log 'patch note jobs need their separate updater'; record 'patch note update failed'
     fi
   fi
   echo "deployed $site ${sha:0:7} ($summary)"
   exit 0
 fi
 
-log "$site did not come up on ${sha:0:7}; putting ${old:0:7} back"
-checkout "$old"
-if rebuild && healthy; then
+log "$site failed; restoring ${old:0:7}"
+compose stop backend >&2 || { record 'failed: cannot stop backend'; exit 5; }
+if $export_failed; then record 'failed: reverse export; backend kept stopped'; exit 5; fi
+if ! $was_native && [[ -f "$data/data/.postgres-authority.json" ]]; then
+  # Includes writes accepted during the health-check window. Never start stale SQLite.
+  if ! database rollback; then record 'failed: reverse export; backend kept stopped'; exit 5; fi
+fi
+if ! checkout "$old"; then record 'failed: rollback checkout; backend kept stopped'; exit 5; fi
+if ((${#services[@]})); then
+  if ! compose build "${services[@]}" >&2; then record 'failed: rollback build; backend kept stopped'; exit 5; fi
+fi
+if $was_native; then
+  if ! database prepare || ! database studio; then record 'failed: rollback database; backend kept stopped'; exit 5; fi
+fi
+if compose up -d --no-build --no-deps backend "${services[@]}" >&2 && healthy; then
+  save_deployed "$old"
   record "rolled back ($summary)"
-  log "back on ${old:0:7}; the database backup was kept"
+  log "back on ${old:0:7}; backups retained"
 else
-  record "rollback unhealthy ($summary)"
-  log "still unhealthy after putting ${old:0:7} back; check the site now"
+  record "rollback unhealthy ($summary)"; log 'rollback unhealthy; inspect the site'
 fi
 exit 5
