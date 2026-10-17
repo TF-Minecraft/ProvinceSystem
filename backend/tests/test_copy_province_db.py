@@ -126,7 +126,7 @@ def test_invalid_values_fail_before_target_migrations(legacy, scratch_database, 
 
 @pytest.mark.parametrize("value", ['{"a":NaN}', '{"a":Infinity}', '{"a":-Infinity}',
                                   '{"a":"\\u0000"}', '{"\\u0000":"a"}', '{"a":"\\ud800"}',
-                                  '{"a":1e131072}', '{"a":1e-16384}', '{broken'])
+                                  '{"a":1e131072}', '{"a":1e-16384}', '{"a":1e9999999999999999999}', '{broken'])
 def test_invalid_json_fails_before_target_migrations(legacy, scratch_database, value):
     insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok", detail_json=value)
     with pytest.raises(copy.CopyError, match="admin_audit rowid 1, column detail_json:"):
@@ -229,19 +229,27 @@ def test_target_refuses_existing_rows_and_checks_verification_mismatches(legacy,
         copy.to_postgres(legacy, scratch_database, verify_only=True)
 
 
-def test_late_copy_failure_rolls_back_all_rows_and_retry_succeeds(legacy, scratch_database):
+def test_late_copy_failure_rolls_back_all_rows_and_retry_succeeds(legacy, scratch_database, monkeypatch):
     code(legacy)
     insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok")
     migrate.migrate(scratch_database)
-    with psycopg.connect(scratch_database) as conn:
-        conn.execute("ALTER TABLE sessions ADD CONSTRAINT reject_source CHECK(false)")
     insert(legacy, "sessions", token_hash="s", code_id=1, player_uuid="p", created_at=NOW, expires_at=NOW)
+    require_current = copy._require_current
+
+    def reject_after_schema_verification(conn, tables):
+        require_current(conn, tables)
+        # Inject a real COPY error after preflight. A drifted target would now
+        # be refused before loading, so install this inside the copy transaction.
+        conn.execute("ALTER TABLE sessions ADD CONSTRAINT reject_source CHECK(false)")
+
+    monkeypatch.setattr(copy, "_require_current", reject_after_schema_verification)
     with pytest.raises(psycopg.errors.CheckViolation):
         copy.to_postgres(legacy, scratch_database)
+    monkeypatch.setattr(copy, "_require_current", require_current)
     with psycopg.connect(scratch_database) as conn:
         for table in copy.specifications():
             assert conn.execute(f'SELECT count(*) FROM "{table.name}"').fetchone() == (0,)
-        conn.execute("ALTER TABLE sessions DROP CONSTRAINT reject_source")
+        assert conn.execute("SELECT 1 FROM pg_constraint WHERE conname='reject_source'").fetchall() == []
     assert all(check.matches for check in copy.to_postgres(legacy, scratch_database).checks)
 
 
@@ -353,3 +361,100 @@ def test_cli_connection_errors_do_not_echo_connection_credentials(legacy, capsys
         copy.main(["to-postgres", "--sqlite", str(legacy), "--database-url", "password=private-credential"])
     assert exc.value.code == 1
     assert capsys.readouterr().err == "copy failed: Postgres OperationalError\n"
+
+
+@pytest.mark.parametrize("value", [
+    '{"a":"\\u0000","a":1}',
+    '{"a":"\\ud800","a":1}',
+    '{"a":{"\\u0000":1},"a":1}',
+    '{"a":["\\u0000"],"a":1}',
+    '{"a":1e131072,"a":1}',
+])
+def test_overwritten_json_members_are_validated_before_migrations(legacy, scratch_database, value):
+    insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok", detail_json=value)
+    with pytest.raises(copy.CopyError, match="column detail_json:"):
+        copy.to_postgres(legacy, scratch_database)
+    assert_unmigrated(scratch_database)
+
+
+def test_valid_duplicate_json_keys_keep_postgres_last_value_semantics(legacy, scratch_database):
+    insert(legacy, "admin_audit", created_at=NOW, actor_type="system", action="copy", outcome="ok",
+           detail_json='{"a":[{"x":1}],"a":2}')
+    assert all(check.matches for check in copy.to_postgres(legacy, scratch_database).checks)
+    with psycopg.connect(scratch_database) as conn:
+        assert conn.execute("SELECT detail_json FROM admin_audit").fetchone() == ({"a": 2},)
+
+
+def test_duplicate_sequence_names_fail_before_migrations(legacy, scratch_database):
+    code(legacy)
+    with closing(sqlite3.connect(legacy)) as conn, conn:
+        conn.execute("UPDATE sqlite_sequence SET seq=500 WHERE name='codes'")
+        conn.execute("INSERT INTO sqlite_sequence VALUES ('codes', 1)")
+    with pytest.raises(copy.CopyError, match="sqlite_sequence.*duplicate"):
+        copy.to_postgres(legacy, scratch_database)
+    assert_unmigrated(scratch_database)
+
+
+@pytest.mark.parametrize("storage", ["VIRTUAL", "STORED"])
+def test_generated_source_columns_cannot_be_silently_dropped(legacy, scratch_database, storage):
+    with closing(sqlite3.connect(legacy)) as conn, conn:
+        conn.execute(f"ALTER TABLE codes ADD COLUMN surprise TEXT GENERATED ALWAYS AS ('extra') {storage}")
+    code(legacy)
+    with pytest.raises(copy.CopyError, match="codes: source columns do not match"):
+        copy.to_postgres(legacy, scratch_database)
+    assert_unmigrated(scratch_database)
+
+
+def test_retired_source_column_must_not_be_generated(legacy, scratch_database):
+    with closing(sqlite3.connect(legacy)) as conn, conn:
+        conn.execute("ALTER TABLE discord_links ADD COLUMN player_key TEXT GENERATED ALWAYS AS (player_uuid) VIRTUAL")
+    with pytest.raises(copy.CopyError, match="discord_links: source columns do not match"):
+        copy.to_postgres(legacy, scratch_database)
+    assert_unmigrated(scratch_database)
+
+
+@pytest.mark.parametrize("change", [
+    "ALTER TABLE codes ALTER COLUMN scope SET DEFAULT 'profile'",
+    "ALTER SEQUENCE codes_id_seq INCREMENT BY 3",
+    "DROP INDEX idx_patreon_alerts_open",
+    "ALTER TABLE admin_audit DISABLE TRIGGER admin_audit_no_change",
+    "ALTER TABLE sessions DISABLE TRIGGER ALL",
+    "ALTER TABLE sessions DROP CONSTRAINT sessions_code_id_fkey",
+    "CREATE OR REPLACE FUNCTION admin_audit_append_only() RETURNS trigger LANGUAGE plpgsql "
+    "AS 'BEGIN RETURN NEW; END'",
+])
+def test_behavioral_native_schema_drift_is_refused(legacy, scratch_database, change):
+    code(legacy)
+    migrate.migrate(scratch_database)
+    with psycopg.connect(scratch_database) as conn:
+        conn.execute(change)
+    with pytest.raises(copy.CopyError, match="native schema.*differ"):
+        copy.to_postgres(legacy, scratch_database)
+    with psycopg.connect(scratch_database) as conn:
+        assert conn.execute("SELECT count(*) FROM codes").fetchone() == (0,)
+
+
+def test_legacy_archive_includes_standalone_indexes_and_triggers(legacy, scratch_database, tmp_path):
+    with closing(sqlite3.connect(legacy)) as conn, conn:
+        conn.executescript("""
+            CREATE TABLE retired (name TEXT, value INTEGER);
+            CREATE UNIQUE INDEX retired_name ON retired(name);
+            CREATE TRIGGER retired_increment AFTER INSERT ON retired BEGIN
+                UPDATE retired SET value = value + 1 WHERE rowid = NEW.rowid;
+            END;
+            INSERT INTO retired VALUES ('old', 0);
+        """)
+    archive = tmp_path / "archive"
+    copy.to_postgres(legacy, scratch_database, archive_legacy=archive)
+    payload = json.loads((archive / "legacy-0001.json").read_text())
+    assert {obj["name"] for obj in payload.get("objects", [])} == {"retired_name", "retired_increment"}
+    with closing(sqlite3.connect(":memory:")) as restored:
+        restored.execute(payload["sql"])
+        restored.executemany("INSERT INTO retired VALUES (?, ?)", payload["rows"])
+        for obj in payload["objects"]:
+            restored.execute(obj["sql"])
+        assert restored.execute("SELECT value FROM retired").fetchone() == (1,)
+        with pytest.raises(sqlite3.IntegrityError):
+            restored.execute("INSERT INTO retired VALUES ('old', 0)")
+        restored.execute("INSERT INTO retired VALUES ('new', 0)")
+        assert restored.execute("SELECT value FROM retired WHERE name='new'").fetchone() == (1,)

@@ -25,7 +25,7 @@ import tempfile
 from contextlib import closing
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal, ROUND_HALF_EVEN
+from decimal import Decimal, DecimalException, ROUND_HALF_EVEN
 from pathlib import Path
 from urllib.parse import quote
 
@@ -45,6 +45,9 @@ _KINDS = {"timestamp with time zone": "timestamptz"}
 _OPTIONS = "-c search_path=public -c TimeZone=UTC -c lock_timeout=5s -c statement_timeout=60s"
 # Retired before the current SQLite schema; no runtime reader or writer remains.
 _LEGACY_COLUMNS = {"discord_links": {"player_key"}}
+# Generated from the migrations on PG17. Refresh with _native_fingerprint when
+# intentionally changing the copy schema; the rollback shape must stay compatible.
+_NATIVE_SCHEMA_SHA256 = "9e2b64f0cdbf823714636271a028150505be575897c4449f5d2e1a26e9dbe60e"
 
 
 class CopyError(RuntimeError):
@@ -178,7 +181,23 @@ def _json(value) -> JsonValue:
     def refuse_constant(_):
         raise ValueError("non-finite JSON number")
 
-    parsed = json.loads(raw, parse_int=Decimal, parse_float=Decimal, parse_constant=refuse_constant)
+    def validate_member(value):
+        if isinstance(value, list):
+            for item in value:
+                validate_member(item)
+        elif not isinstance(value, dict):
+            # Nested objects have already passed object_members. Do not lose an
+            # invalid earlier value when JSONB keeps the last duplicate key.
+            _json_text(value, canonical=True)
+
+    def object_members(pairs):
+        for key, value in pairs:
+            _text(key)
+            validate_member(value)
+        return dict(pairs)
+
+    parsed = json.loads(raw, parse_int=Decimal, parse_float=Decimal, parse_constant=refuse_constant,
+                        object_pairs_hook=object_members)
     return JsonValue(raw, _json_text(parsed, canonical=True), _json_text(parsed, canonical=False))
 
 
@@ -228,7 +247,7 @@ def _typed(table: Table, rowid, values) -> tuple:
     for column, value in zip(table.columns, values):
         try:
             out.append(_value(column, value))
-        except (ValueError, TypeError, OverflowError, RecursionError) as exc:
+        except (ValueError, TypeError, OverflowError, RecursionError, DecimalException) as exc:
             # Location is useful; the actual value may contain credentials.
             reason = str(exc) if type(exc) is ValueError else f"invalid {column.kind}"
             raise CopyError(f"{table.name} rowid {rowid}, column {column.name}: {reason}") from None
@@ -255,13 +274,18 @@ def _source(conn: sqlite3.Connection, tables: list[Table]) -> Source:
     expected = {table.name for table in tables}
     if missing := expected - names:
         raise CopyError(f"SQLite is missing site tables: {', '.join(sorted(missing))}")
-    sequences = dict(conn.execute("SELECT name, seq FROM sqlite_sequence"))
+    sequences = {}
+    for name, high_water in conn.execute("SELECT name, seq FROM sqlite_sequence"):
+        if name in sequences:
+            raise CopyError("sqlite_sequence: duplicate counter names")
+        sequences[name] = high_water
     source = Source({}, sequences, sorted(names - expected))
     for table in tables:
-        actual = {row[1] for row in conn.execute(f"PRAGMA table_info({_quote(table.name)})")}
+        info = conn.execute(f"PRAGMA table_xinfo({_quote(table.name)})").fetchall()
+        actual = {row[1] for row in info}
         wanted = {c.name for c in table.columns}
         extra = actual - wanted
-        if wanted - actual or extra - _LEGACY_COLUMNS.get(table.name, set()):
+        if wanted - actual or extra - _LEGACY_COLUMNS.get(table.name, set()) or any(row[6] for row in info):
             raise CopyError(f"{table.name}: source columns do not match the rollback schema")
         if extra:
             source.legacy_columns[table.name] = tuple(sorted(extra))
@@ -324,6 +348,71 @@ def _require_current(conn, tables: list[Table]) -> None:
         expected_columns = [(c.name, c.kind, c.required, c.identity) for c in table.columns]
         if actual != expected_columns:
             raise CopyError(f"{table.name}: native schema no longer matches the rollback shape")
+    if _native_fingerprint(conn, tables) != _NATIVE_SCHEMA_SHA256:
+        raise CopyError("native schema defaults, constraints, indexes, triggers or sequences differ from the copy schema")
+
+
+def _native_fingerprint(conn, tables: list[Table]) -> str:
+    """Migration-owned definitions and enforcement state, without physical OIDs."""
+    site = ("WITH site AS (SELECT c.* FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "WHERE n.nspname = 'public' AND c.relname = ANY(%s)) ")
+    queries = {
+        "tables": "SELECT relname, relkind::text, relpersistence::text, relrowsecurity, relforcerowsecurity FROM site",
+        "columns": """
+            SELECT c.relname, a.attname, a.attnum, format_type(a.atttypid, a.atttypmod) AS type,
+                   a.attnotnull, a.attidentity::text, a.attgenerated::text,
+                   cn.nspname AS collation_schema, co.collname, pg_get_expr(d.adbin, d.adrelid) AS default_expr
+            FROM site c JOIN pg_attribute a ON a.attrelid = c.oid
+            LEFT JOIN pg_attrdef d ON d.adrelid = c.oid AND d.adnum = a.attnum
+            LEFT JOIN pg_collation co ON co.oid = a.attcollation
+            LEFT JOIN pg_namespace cn ON cn.oid = co.collnamespace
+            WHERE a.attnum > 0 AND NOT a.attisdropped
+        """,
+        "constraints": """
+            SELECT c.relname, k.conname, k.contype::text, k.convalidated, k.condeferrable, k.condeferred,
+                   pg_get_constraintdef(k.oid, false) AS definition
+            FROM site c JOIN pg_constraint k ON k.conrelid = c.oid
+        """,
+        "indexes": """
+            SELECT c.relname, pg_get_indexdef(i.indexrelid, 0, false) AS definition,
+                   i.indisvalid, i.indisready, i.indislive, i.indisunique, i.indisprimary,
+                   i.indisexclusion, i.indimmediate, i.indnullsnotdistinct
+            FROM site c JOIN pg_index i ON i.indrelid = c.oid
+        """,
+        "triggers": """
+            SELECT c.relname, t.tgisinternal, t.tgenabled::text, t.tgtype, t.tgdeferrable, t.tginitdeferred,
+                   k.conname, other.relname AS related_table, other_ns.nspname AS related_schema,
+                   p.proname, pn.nspname AS function_schema,
+                   CASE WHEN t.tgisinternal THEN NULL ELSE pg_get_triggerdef(t.oid, false) END AS definition
+            FROM site c JOIN pg_trigger t ON t.tgrelid = c.oid
+            JOIN pg_proc p ON p.oid = t.tgfoid JOIN pg_namespace pn ON pn.oid = p.pronamespace
+            LEFT JOIN pg_constraint k ON k.oid = t.tgconstraint
+            LEFT JOIN pg_class other ON other.oid = t.tgconstrrelid
+            LEFT JOIN pg_namespace other_ns ON other_ns.oid = other.relnamespace
+        """,
+        "trigger_functions": """
+            SELECT DISTINCT pg_get_functiondef(p.oid) AS definition
+            FROM site c JOIN pg_trigger t ON t.tgrelid = c.oid JOIN pg_proc p ON p.oid = t.tgfoid
+            WHERE NOT t.tgisinternal
+        """,
+        "sequences": """
+            SELECT c.relname, a.attname, format_type(s.seqtypid, NULL) AS type,
+                   s.seqstart, s.seqincrement, s.seqmax, s.seqmin, s.seqcache, s.seqcycle
+            FROM site c JOIN pg_attribute a ON a.attrelid = c.oid
+            JOIN pg_depend d ON d.refobjid = c.oid AND d.refobjsubid = a.attnum
+              AND d.classid = 'pg_class'::regclass AND d.refclassid = 'pg_class'::regclass AND d.deptype = 'i'
+            JOIN pg_sequence s ON s.seqrelid = d.objid
+        """,
+        "rules": """
+            SELECT c.relname, r.ev_enabled::text, pg_get_ruledef(r.oid, false) AS definition
+            FROM site c JOIN pg_rewrite r ON r.ev_class = c.oid
+        """,
+    }
+    def encoded(value):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    manifest = {name: sorted((dict(row) for row in conn.execute(site + query, ([t.name for t in tables],))),
+                             key=encoded) for name, query in queries.items()}
+    return hashlib.sha256(encoded(manifest).encode("utf-8")).hexdigest()
 
 
 def _read_pg(conn, table: Table) -> list[tuple]:
@@ -414,6 +503,10 @@ def _archive(conn, source: Source, directory: Path) -> None:
         cursor = conn.execute(f"SELECT * FROM {_quote(name)}")
         payload = {"table": name, "columns": [c[0] for c in cursor.description], "rows": cursor.fetchall(),
                    "sql": conn.execute("SELECT sql FROM sqlite_master WHERE name = ?", (name,)).fetchone()[0]}
+        payload["objects"] = [dict(zip(("type", "name", "sql"), row)) for row in conn.execute(
+            "SELECT type, name, sql FROM sqlite_master WHERE tbl_name = ? "
+            "AND type IN ('index', 'trigger') AND sql IS NOT NULL ORDER BY type, name", (name,),
+        )]
         if name in source.legacy_columns:
             payload["legacy_columns"] = source.legacy_columns[name]
         encoded = json.dumps(payload, ensure_ascii=True, default=lambda value: {"blob_hex": value.hex()},
