@@ -72,6 +72,7 @@ from src.characters.wardrobe import (
     store_masked_template,
     upload_pending_create_wardrobe,
     upload_slot,
+    wardrobe_slot_texture,
     worn_skin_texture,
 )
 from src.skins.auth import (
@@ -1153,6 +1154,21 @@ def plugin_get_worn_skin(
     _require_plugin(x_plugin_key)
     try:
         return worn_skin_texture(player_uuid, character_id)
+    except WardrobeError as e:
+        raise _wardrobe_http(e) from e
+
+
+@characters_router.get("/plugin/wardrobe/{player_uuid}/{character_id}/slots/{slot}")
+def plugin_get_wardrobe_slot_texture(
+    player_uuid: str,
+    character_id: str,
+    slot: str,
+    x_plugin_key: str | None = Header(default=None, alias=HEADER_PLUGIN_KEY),
+):
+    """Read one outfit for a fixed player head; no wardrobe state is changed."""
+    _require_plugin(x_plugin_key)
+    try:
+        return wardrobe_slot_texture(player_uuid, character_id, slot)
     except WardrobeError as e:
         raise _wardrobe_http(e) from e
 
